@@ -50,13 +50,19 @@ import fr.paris.lutece.portal.service.template.AppTemplateService;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.util.html.HtmlTemplate;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 /**
  * Service handling announce notifications: admin moderation emails and subscription notification queuing
  */
+@ApplicationScoped
 public class AnnounceNotificationService
 {
     public static final String BEAN_NAME = "announce.announceNotificationService";
+
+    @Inject
+    private AnnounceService _announceService;
 
     private static final String KEY_WEBMASTER_EMAIL = "portal.site.site_property.email";
     private static final String PROPERTY_SENDER_EMAIL = "announce.mail.senderEmail";
@@ -109,7 +115,7 @@ public class AnnounceNotificationService
         Map<String, Object> model = new HashMap<>( );
         model.put( MARK_PROD_URL, AppPropertiesService.getProperty( PROPERTY_PROD_URL ) );
         model.put( MARK_ANNOUNCE, announce );
-        model.put( MARK_LIST_FIELDS, AnnounceService.getSectorList( ) );
+        model.put( MARK_LIST_FIELDS, _announceService.getSectorList( ) );
         model.put( MARK_LOCALE, locale );
 
         HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_ANNOUNCE_NOTIFY_MESSAGE, locale, model );

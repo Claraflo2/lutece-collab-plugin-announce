@@ -33,21 +33,12 @@
  */
 package fr.paris.lutece.plugins.announce.service;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 /**
  * the entry value service
  */
+@ApplicationScoped
 public class EntryValueService
 {
-    // Static variable pointed at the DAO instance
-    private static EntryValueService _singleton = new EntryValueService( );
-
-    /**
-     * Creates a new instance of EntryValueService
-     * 
-     * @return instance of service
-     */
-    public static EntryValueService getInstance( )
-    {
-        return _singleton;
-    }
 }

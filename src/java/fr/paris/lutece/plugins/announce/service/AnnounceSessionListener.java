@@ -35,9 +35,9 @@ package fr.paris.lutece.plugins.announce.service;
 
 import fr.paris.lutece.plugins.announce.service.upload.AnnounceAsynchronousUploadHandler;
 import fr.paris.lutece.portal.service.util.AppLogService;
-
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.servlet.http.HttpSessionEvent;
+import jakarta.servlet.http.HttpSessionListener;
 
 /**
  * Will remove fileItems uploaded by flash
@@ -60,11 +60,8 @@ public class AnnounceSessionListener implements HttpSessionListener
     public void sessionDestroyed( HttpSessionEvent se )
     {
 
-        if ( AppLogService.isDebugEnabled( ) )
-        {
-            AppLogService.debug( "FormSessionListener removing " + se.getSession( ).getId( ) );
-        }
+        AppLogService.debug( "FormSessionListener removing {}", se.getSession( ).getId( ) );
 
-        AnnounceAsynchronousUploadHandler.getHandler( ).removeSessionFiles( se.getSession( ) );
+        CDI.current( ).select( AnnounceAsynchronousUploadHandler.class ).get( ).removeSessionFiles( se.getSession( ) );
     }
 }

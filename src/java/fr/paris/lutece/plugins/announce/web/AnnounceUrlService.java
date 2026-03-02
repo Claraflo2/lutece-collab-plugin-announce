@@ -33,7 +33,7 @@
  */
 package fr.paris.lutece.plugins.announce.web;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import fr.paris.lutece.plugins.announce.utils.AnnounceUtils;
 import fr.paris.lutece.portal.service.util.AppPathService;

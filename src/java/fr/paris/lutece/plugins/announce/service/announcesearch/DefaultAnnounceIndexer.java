@@ -33,7 +33,6 @@
  */
 package fr.paris.lutece.plugins.announce.service.announcesearch;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -41,7 +40,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
@@ -51,13 +50,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.tika.exception.TikaException;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.ParseContext;
-import org.apache.tika.parser.html.HtmlParser;
-import org.apache.tika.sax.BodyContentHandler;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.SAXException;
+import org.jsoup.Jsoup;
 
 import fr.paris.lutece.plugins.announce.business.Announce;
 import fr.paris.lutece.plugins.announce.business.AnnounceHome;
@@ -74,17 +67,24 @@ import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.plugin.PluginService;
 import fr.paris.lutece.portal.service.search.IndexationService;
 import fr.paris.lutece.portal.service.search.SearchItem;
-import fr.paris.lutece.portal.service.util.AppException;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPathService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.util.url.UrlItem;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 /**
  * DefaultAnnounceIndexer
  */
+@ApplicationScoped
+@Named( "announce.announceIndexer" )
 public class DefaultAnnounceIndexer implements IAnnounceSearchIndexer
 {
+    @Inject
+    private AnnounceSearchService _announceSearchService;
+
     private static final String PROPERTY_INDEXER_NAME = "announce.indexer.name";
     private static final String PARAMETER_ANNOUNCE_ID = "announce_id";
     private static final String ENABLE_VALUE_TRUE = "1";
@@ -164,7 +164,7 @@ public class DefaultAnnounceIndexer implements IAnnounceSearchIndexer
         {
             // incremental indexing
             // delete all record which must be deleted
-            for ( IndexerAction action : AnnounceSearchService.getInstance( ).getAllIndexerActionByTask( IndexerAction.TASK_DELETE, plugin ) )
+            for ( IndexerAction action : _announceSearchService.getAllIndexerActionByTask( IndexerAction.TASK_DELETE, plugin ) )
             {
                 sbLogAnnounce( sbLogs, action.getIdAnnounce( ), IndexerAction.TASK_DELETE );
 
@@ -174,11 +174,11 @@ public class DefaultAnnounceIndexer implements IAnnounceSearchIndexer
                 };
 
                 indexWriter.deleteDocuments( terms );
-                AnnounceSearchService.getInstance( ).removeIndexerAction( action.getIdAction( ), plugin );
+                _announceSearchService.removeIndexerAction( action.getIdAction( ), plugin );
             }
 
             // Update all record which must be updated
-            for ( IndexerAction action : AnnounceSearchService.getInstance( ).getAllIndexerActionByTask( IndexerAction.TASK_MODIFY, plugin ) )
+            for ( IndexerAction action : _announceSearchService.getAllIndexerActionByTask( IndexerAction.TASK_MODIFY, plugin ) )
             {
                 sbLogAnnounce( sbLogs, action.getIdAnnounce( ), IndexerAction.TASK_MODIFY );
 
@@ -191,7 +191,7 @@ public class DefaultAnnounceIndexer implements IAnnounceSearchIndexer
 
                 listIdAnnounce.add( action.getIdAnnounce( ) );
 
-                AnnounceSearchService.getInstance( ).removeIndexerAction( action.getIdAction( ), plugin );
+                _announceSearchService.removeIndexerAction( action.getIdAction( ), plugin );
             }
 
             this.indexListAnnounce( indexWriter, listIdAnnounce, plugin );
@@ -199,12 +199,17 @@ public class DefaultAnnounceIndexer implements IAnnounceSearchIndexer
             listIdAnnounce = new ArrayList<>( );
 
             // add all record which must be added
-            for ( IndexerAction action : AnnounceSearchService.getInstance( ).getAllIndexerActionByTask( IndexerAction.TASK_CREATE, plugin ) )
+            for ( IndexerAction action : _announceSearchService.getAllIndexerActionByTask( IndexerAction.TASK_CREATE, plugin ) )
             {
                 sbLogAnnounce( sbLogs, action.getIdAnnounce( ), IndexerAction.TASK_CREATE );
+
+                // Delete any existing document to avoid duplicates in the index
+                Term term = new Term( AnnounceSearchItem.FIELD_ID_ANNOUNCE, Integer.toString( action.getIdAnnounce( ) ) );
+                indexWriter.deleteDocuments( term );
+
                 listIdAnnounce.add( action.getIdAnnounce( ) );
 
-                AnnounceSearchService.getInstance( ).removeIndexerAction( action.getIdAction( ), plugin );
+                _announceSearchService.removeIndexerAction( action.getIdAction( ), plugin );
             }
 
             this.indexListAnnounce( indexWriter, listIdAnnounce, plugin );
@@ -330,20 +335,8 @@ public class DefaultAnnounceIndexer implements IAnnounceSearchIndexer
 
         String strContentToIndex = getContentToIndex( announce );
 
-        // NOUVEAU
-        ContentHandler handler = new BodyContentHandler( );
-        Metadata metadata = new Metadata( );
-
-        try
-        {
-            new HtmlParser( ).parse( new ByteArrayInputStream( strContentToIndex.getBytes( ) ), handler, metadata, new ParseContext( ) );
-        }
-        catch( SAXException | TikaException e )
-        {
-            throw new AppException( "Error during announce parsing." );
-        }
-
-        String strContent = handler.toString( );
+        // Extract text from HTML using Jsoup
+        String strContent = Jsoup.parse( strContentToIndex ).text( );
 
         // Define field types with ngram tokenization for "contents" and "title"
         FieldType ngramType = new FieldType( );

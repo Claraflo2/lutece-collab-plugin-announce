@@ -35,10 +35,14 @@ package fr.paris.lutece.plugins.announce.service.entrytype;
 
 import fr.paris.lutece.plugins.genericattributes.business.Entry;
 import fr.paris.lutece.plugins.genericattributes.service.entrytype.AbstractEntryTypeGeolocation;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
 
 /**
  * The Class EntryTypeGeolocation.
  */
+@ApplicationScoped
+@Named( "announce.entryTypeGeolocation" )
 public class EntryTypeGeolocation extends AbstractEntryTypeGeolocation
 {
     /** The Constant CONSTANT_ID_ADDRESS. */

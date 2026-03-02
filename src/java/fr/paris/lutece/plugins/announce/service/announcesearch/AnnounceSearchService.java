@@ -65,19 +65,23 @@ import fr.paris.lutece.plugins.announce.service.AnnouncePlugin;
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.plugin.PluginService;
 import fr.paris.lutece.portal.service.search.SearchResult;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
 import fr.paris.lutece.portal.service.util.AppException;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPathService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 /**
  * AnnounceSearchService
  */
-public final class AnnounceSearchService
+@ApplicationScoped
+public class AnnounceSearchService
 {
-    private static final String BEAN_SEARCH_ENGINE = "announce.announceSearchEngine";
     private static final String PATH_INDEX = "announce.internalIndexer.lucene.indexPath";
+    private static final String PATH_INDEX_IN_WEBAPP = "announce.internalIndexer.lucene.indexInWebapp";
     private static final String PROPERTY_WRITER_MERGE_FACTOR = "announce.internalIndexer.lucene.writer.mergeFactor";
     private static final String PROPERTY_WRITER_MAX_FIELD_LENGTH = "announce.internalIndexer.lucene.writer.maxSectorLength";
     private static final String PROPERTY_ANALYSER_CLASS_NAME = "announce.internalIndexer.lucene.analyser.className";
@@ -93,20 +97,23 @@ public final class AnnounceSearchService
     private static final int DEFAULT_WRITER_MERGE_FACTOR = 20;
     private static final int DEFAULT_WRITER_MAX_FIELD_LENGTH = 1000000;
 
-    // Constants corresponding to the variables defined in the lutece.properties file
-    private static final AnnounceSearchService _singleton = new AnnounceSearchService( );
     private static String _strPriceFormat;
     private String _strIndex;
     private Analyzer _analyzer;
-    private IAnnounceSearchIndexer _indexer;
     private int _nWriterMergeFactor;
     private int _nWriterMaxSectorLength;
-    private static volatile IndexWriter _indexWriterInstance;
+    private volatile IndexWriter _indexWriterInstance;
 
-    /**
-     * Creates a new instance of DirectorySearchService
-     */
-    private AnnounceSearchService( )
+    @Inject
+    @Named( "announce.announceSearchEngine" )
+    private IAnnounceSearchEngine _searchEngine;
+
+    @Inject
+    @Named( "announce.announceIndexer" )
+    private IAnnounceSearchIndexer _indexer;
+
+    @PostConstruct
+    public void init( )
     {
         // Read configuration properties
         String strIndex = getIndex( );
@@ -126,8 +133,6 @@ public final class AnnounceSearchService
             throw new AppException( "Analyser class name not found in announce.properties", null );
         }
 
-        _indexer = SpringContextService.getBean( "announce.announceIndexer" );
-
         try
         {
             _analyzer = (Analyzer) Class.forName( strAnalyserClassName ).getDeclaredConstructor( ).newInstance( );
@@ -136,16 +141,6 @@ public final class AnnounceSearchService
         {
             throw new AppException( "Failed to load Lucene Analyzer class", e );
         }
-    }
-
-    /**
-     * Get the HelpdeskSearchService instance
-     * 
-     * @return The {@link AnnounceSearchService}
-     */
-    public static AnnounceSearchService getInstance( )
-    {
-        return _singleton;
     }
 
     /**
@@ -167,7 +162,7 @@ public final class AnnounceSearchService
 
         try
         {
-            IAnnounceSearchEngine engine = SpringContextService.getBean( BEAN_SEARCH_ENGINE );
+            IAnnounceSearchEngine engine = _searchEngine;
             List<SearchResult> listResults = new ArrayList<>( );
             nNbItems = engine.getSearchResults( filter, PluginService.getPlugin( AnnouncePlugin.PLUGIN_NAME ), listResults, nPageNumber, nItemsPerPage );
 
@@ -195,7 +190,7 @@ public final class AnnounceSearchService
 
         try
         {
-            IAnnounceSearchEngine engine = SpringContextService.getBean( BEAN_SEARCH_ENGINE );
+            IAnnounceSearchEngine engine = _searchEngine;
             nNbItems = engine.getSearchResultsBis( filter, PluginService.getPlugin( AnnouncePlugin.PLUGIN_NAME ), listAnnouncesResults, nPageNumber,
                     nItemsPerPage, anSort );
 
@@ -289,7 +284,7 @@ public final class AnnounceSearchService
             sbLogs.append( "\n with message: " );
             sbLogs.append( e.getMessage( ) );
             sbLogs.append( "\r\n" );
-            AppLogService.error( "Indexing error : " + e.getMessage( ), e );
+            AppLogService.error( "Indexing error : {}", e.getMessage( ), e );
         }
         finally
         {
@@ -363,7 +358,15 @@ public final class AnnounceSearchService
     {
         if ( _strIndex == null )
         {
-            _strIndex = AppPathService.getPath( PATH_INDEX );
+            boolean bIndexInWebapp = AppPropertiesService.getPropertyBoolean( PATH_INDEX_IN_WEBAPP, true );
+            if ( bIndexInWebapp )
+            {
+                _strIndex = AppPathService.getPath( PATH_INDEX );
+            }
+            else
+            {
+                _strIndex = AppPropertiesService.getProperty( PATH_INDEX );
+            }
         }
 
         return _strIndex;

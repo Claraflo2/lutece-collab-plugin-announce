@@ -36,8 +36,9 @@ package fr.paris.lutece.plugins.announce.business;
 import fr.paris.lutece.plugins.announce.service.AnnouncePlugin;
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.plugin.PluginService;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
 import fr.paris.lutece.util.ReferenceList;
+
+import jakarta.enterprise.inject.spi.CDI;
 
 import java.util.Collection;
 import java.util.Locale;
@@ -48,7 +49,7 @@ import java.util.Locale;
 public final class SectorHome
 {
     // Static variable pointed at the DAO instance
-    private static ISectorDAO _dao = SpringContextService.getBean( "announce.sectorDAO" );
+    private static ISectorDAO _dao = CDI.current( ).select( ISectorDAO.class ).get( );
     private static Plugin _plugin = PluginService.getPlugin( AnnouncePlugin.PLUGIN_NAME );
 
     /** Creates a new instance of SectorHome */

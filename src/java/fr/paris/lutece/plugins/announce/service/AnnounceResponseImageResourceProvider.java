@@ -33,7 +33,7 @@
  */
 package fr.paris.lutece.plugins.announce.service;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import fr.paris.lutece.plugins.announce.business.Announce;
 import fr.paris.lutece.plugins.announce.business.AnnounceHome;
@@ -54,10 +54,12 @@ import fr.paris.lutece.portal.service.security.SecurityService;
 import fr.paris.lutece.portal.web.LocalVariables;
 import fr.paris.lutece.util.file.FileUtil;
 import fr.paris.lutece.util.url.UrlItem;
+import jakarta.enterprise.context.ApplicationScoped;
 
 /**
  * Resource provider for Announce images
  */
+@ApplicationScoped
 public class AnnounceResponseImageResourceProvider implements ImageResourceProvider
 {
 
@@ -150,7 +152,7 @@ public class AnnounceResponseImageResourceProvider implements ImageResourceProvi
 
                 if ( response.getFile( ) != null )
                 {
-                    File file = FileHome.findByPrimaryKey( response.getFile( ).getIdFile( ) );
+                    File file = FileHome.findByPrimaryKey( Integer.parseInt( response.getFile( ).getFileKey( ) ) );
 
                     if ( ( file.getPhysicalFile( ) != null ) && FileUtil.hasImageExtension( file.getTitle( ) ) )
                     {

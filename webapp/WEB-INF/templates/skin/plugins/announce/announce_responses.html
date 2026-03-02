@@ -1,38 +1,44 @@
 <#assign imageIndex = 1>
+<#assign hasOpenDiv = false>
 <#list list_responses as response>
 	<#if response.toStringValueResponse?has_content || response.file??>
-		<#if entrySave?? && entrySave.idEntry!=response.entry.idEntry>
+		<#if hasOpenDiv && entrySave?? && entrySave.idEntry!=response.entry.idEntry>
 				</div>
 			</div>
 			<#if isImage?? && isImage>
 				</div>
 				<#assign isImage = false>
 			</#if>
+			<#assign hasOpenDiv = false>
 		</#if>
-		<#if response.field?? && response.field.title??>
-			<#if response.field.title == "X">
+		<#if response.field?? && response.field.code??>
+			<#if response.field.code == "X">
 				<#assign lat = response.toStringValueResponse>
-			<#elseif response.field.title == "Y">
+			<#elseif response.field.code == "Y">
 				<#assign lon = response.toStringValueResponse>
-			<#elseif response.field.title == "idAddress">
-			<#elseif response.field.title == "address">
+			<#elseif response.field.code == "idAddress">
+			<#elseif response.field.code == "geometry">
+			<#elseif response.field.code == "additional_address">
+			<#elseif response.field.code == "address">
 				<#assign addressAnnounce = response.toStringValueResponse>
 				<div class="row mb-3 align-items-center">
-					<label class="col-sm-2 fw-semibold" for="response">${response.entry.title?html}</label>
+					<label class="col-sm-2 fw-semibold" for="response">${response.entry.title!}</label>
 					<div class="col-sm-10" id="response">
+						${addressAnnounce!}
 						<#list list_entryTypeGeolocation as entry>
-							<#if entry.mapProvider?has_content && entry.idEntry == response.entry.idEntry >
-								${addressAnnounce?html}
-								<#include entry.mapProvider.htmlRecapCode />
+							<#if entry.mapProvider?has_content && entry.idEntry == response.entry.idEntry && lat?? && lon?? >
+								<#include entry.mapProvider.htmlCode />
 							</#if>
 						</#list>
 					</div>
 				</div>
 			</#if>
+			<#assign entrySave=response.entry>
 		<#elseif !entrySave?? || entrySave.idEntry!=response.entry.idEntry>
 			<#assign entrySave=response.entry>
+			<#assign hasOpenDiv = true>
 			<div class="row mb-3 align-items-center">
-				<label class="col-sm-2 fw-semibold" for="response">${response.entry.title?html}</label>
+				<label class="col-sm-2 fw-semibold" for="response">${response.entry.title!}</label>
 				<div class="col-sm-10" id="response">
 				<#if response.file?? && response.file.idFile &gt; 0>
 					<#assign isImage = true>
@@ -58,3 +64,10 @@
 	</#if>
 	<#assign imageIndex=imageIndex+1>
 </#list>
+<#if hasOpenDiv>
+		</div>
+	</div>
+	<#if isImage?? && isImage>
+		</div>
+	</#if>
+</#if>

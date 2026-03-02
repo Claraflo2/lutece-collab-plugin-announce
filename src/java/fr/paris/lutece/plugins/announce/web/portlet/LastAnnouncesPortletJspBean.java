@@ -48,11 +48,15 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Named;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * This class provides the user interface to manage MyAnnouncesPortlet features
  */
+@RequestScoped
+@Named
 public class LastAnnouncesPortletJspBean extends PortletJspBean
 {
     /**

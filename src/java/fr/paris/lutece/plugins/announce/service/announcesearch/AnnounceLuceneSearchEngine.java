@@ -68,16 +68,24 @@ import fr.paris.lutece.portal.service.search.SearchItem;
 import fr.paris.lutece.portal.service.search.SearchResult;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 /**
  * LuceneSearchEngine
  */
+@ApplicationScoped
+@Named( "announce.announceSearchEngine" )
 public class AnnounceLuceneSearchEngine implements IAnnounceSearchEngine
 {
     private static final int NO_CATEGORY = 0;
     private static final int NO_SECTOR = 0;
     private static final String DAY_FORMAT_PATTERN = "yyyyMMdd";
     private static final String PROPERTY_LUCENE_MIN_SCORE = "announce.lucene.minScore";
+
+    @Inject
+    private AnnounceSearchService _announceSearchService;
 
     /**
      * {@inheritDoc}
@@ -92,7 +100,7 @@ public class AnnounceLuceneSearchEngine implements IAnnounceSearchEngine
 
         try
         {
-            searcher = AnnounceSearchService.getInstance( ).getSearcher( );
+            searcher = _announceSearchService.getSearcher( );
 
             Collection<String> queries = new ArrayList<>( );
             Collection<String> sectors = new ArrayList<>( );
@@ -175,7 +183,7 @@ public class AnnounceLuceneSearchEngine implements IAnnounceSearchEngine
             }
 
             Query queryMulti = MultiFieldQueryParser.parse( queries.toArray( new String [ queries.size( )] ), sectors.toArray( new String [ sectors.size( )] ),
-                    flags.toArray( new BooleanClause.Occur [ flags.size( )] ), AnnounceSearchService.getInstance( ).getAnalyzer( ) );
+                    flags.toArray( new BooleanClause.Occur [ flags.size( )] ), _announceSearchService.getAnalyzer( ) );
 
             TopDocs topDocs = searcher.search( queryMulti, 1000000 );
             ScoreDoc [ ] hits = topDocs.scoreDocs;
@@ -229,7 +237,7 @@ public class AnnounceLuceneSearchEngine implements IAnnounceSearchEngine
         int nNbResults = 0;
         try
         {
-            searcher = AnnounceSearchService.getInstance( ).getSearcher( );
+            searcher = _announceSearchService.getSearcher( );
             BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder( );
 
             // Category id
@@ -254,7 +262,7 @@ public class AnnounceLuceneSearchEngine implements IAnnounceSearchEngine
             // Keywords in title or description
             if ( StringUtils.isNotBlank( filter.getKeywords( ) ) )
             {
-                Analyzer analyzer = AnnounceSearchService.getInstance( ).getAnalyzer( );
+                Analyzer analyzer = _announceSearchService.getAnalyzer( );
                 MultiFieldQueryParser parser = new MultiFieldQueryParser( new String [ ] {
                         SearchItem.FIELD_TITLE, SearchItem.FIELD_SUMMARY, SearchItem.FIELD_CONTENTS
                 }, analyzer );
@@ -384,7 +392,7 @@ public class AnnounceLuceneSearchEngine implements IAnnounceSearchEngine
             }
             catch( ParseException e )
             {
-                AppLogService.error( "Bad Date Format for indexed item \"" + item.getTitle( ) + "\" : " + e.getMessage( ) );
+                AppLogService.error( "Bad Date Format for indexed item \"{}\" : {}", item.getTitle( ), e.getMessage( ) );
             }
 
             result.setUrl( item.getUrl( ) );

@@ -35,12 +35,16 @@ package fr.paris.lutece.plugins.announce.service.entrytype;
 
 import fr.paris.lutece.plugins.genericattributes.business.Entry;
 import fr.paris.lutece.plugins.genericattributes.service.entrytype.AbstractEntryTypeText;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
 
 /**
  *
  * class EntryTypeText
  *
  */
+@ApplicationScoped
+@Named( "announce.entryTypeText" )
 public class EntryTypeText extends AbstractEntryTypeText
 {
     private static final String TEMPLATE_CREATE = "admin/plugins/announce/entries/create_entry_type_text.html";

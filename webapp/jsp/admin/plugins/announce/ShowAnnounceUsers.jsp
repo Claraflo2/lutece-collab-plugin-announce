@@ -1,9 +1,9 @@
 <%@ page errorPage="../../ErrorPage.jsp" %>
 <jsp:include page="../../AdminHeader.jsp" />
 
-<jsp:useBean id="announceUser" scope="session" class="fr.paris.lutece.plugins.announce.web.AnnounceUserJspBean" />
+<%@page import="fr.paris.lutece.plugins.announce.web.AnnounceUserJspBean"%>
 
-<% announceUser.init( request , announceUser.RIGHT_MANAGE_ANNOUNCE ); %>
-<%= announceUser.getList( request )%>
+${ announceUserJspBean.init( pageContext.request, AnnounceUserJspBean.RIGHT_MANAGE_ANNOUNCE ) }
+${ announceUserJspBean.getList( pageContext.request ) }
 
-<%@include file="../../AdminFooter.jsp" %>
+<%@ include file="../../AdminFooter.jsp" %>

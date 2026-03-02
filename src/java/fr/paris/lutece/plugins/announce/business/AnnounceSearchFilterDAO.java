@@ -43,11 +43,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.collections4.CollectionUtils;
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.apache.commons.collections.CollectionUtils;
 
 /**
  * DAO for announce search filters
  */
+@ApplicationScoped
 public class AnnounceSearchFilterDAO implements IAnnounceSearchFilterDAO
 {
     private static final String SQL_QUERY_SELECT = " SELECT id_filter, id_category, keywords, date_min, date_max, price_min, price_max FROM announce_search_filters ";

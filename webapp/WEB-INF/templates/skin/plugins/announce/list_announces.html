@@ -1,3 +1,4 @@
+<@cTpl>
 <div class="row">
 	<div class="col-sm-3">
 		<#include "navigation_links.html">
@@ -152,3 +153,4 @@
 [<#list list_sectors as sector>{"id":"${sector.id}","categories":[<#list sector.listCategories as category>{"id":"${category.id}","label":"${category.label?js_string}"}<#sep>,</#sep></#list>]}<#sep>,</#sep></#list>]
 </script>
 <script src="js/plugins/announce/announce-search.js"></script>
+</@cTpl>

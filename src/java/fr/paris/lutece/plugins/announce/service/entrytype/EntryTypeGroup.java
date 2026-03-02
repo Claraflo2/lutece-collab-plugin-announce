@@ -35,12 +35,16 @@ package fr.paris.lutece.plugins.announce.service.entrytype;
 
 import fr.paris.lutece.plugins.genericattributes.business.Entry;
 import fr.paris.lutece.plugins.genericattributes.service.entrytype.AbstractEntryTypeGroup;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
 
 /**
  *
  * class EntryTypeGroup
  *
  */
+@ApplicationScoped
+@Named( "announce.entryTypeGroup" )
 public class EntryTypeGroup extends AbstractEntryTypeGroup
 {
     // templates

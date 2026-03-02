@@ -1,3 +1,4 @@
+<@cTpl>
 <div class="row">
 	<div class="col-sm-3">
 		<#include "navigation_menu.html">
@@ -70,7 +71,11 @@
 				</div>
 			</form>
 			<script type="text/javascript" src="js/plugins/announce/conditional-questions.js"></script>
-		<script type="text/javascript" src="jsp/site/plugins/asynchronousupload/GetMainUploadJs.jsp?handler=announceAsynchronousUploadHandler" ></script>
+		<script src="themes/shared/plugins/asynchronousupload/uppy/uppy.min.js"></script>
+		<script src="themes/shared/plugins/asynchronousupload/config.js"></script>
+		<script>var mapFileErrors = new Map(); var mapFilesNumber = new Map();</script>
+		<script type="text/javascript" src="jsp/site/plugins/asynchronousupload/GetMainUploadJs.jsp?handler=announceAsynchronousUploadHandler"></script>
 		</div>
 	</div>
 </div>
+</@cTpl>

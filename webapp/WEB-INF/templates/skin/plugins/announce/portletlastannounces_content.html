@@ -1,8 +1,10 @@
+<@cTpl>
 <div class="row">
 	<div class="col-12">
 		<#if portlet.displayPortletTitle == 0>
-			<h5>${portlet.name}</h5>
+			<h5>${portlet.name!}</h5>
 		</#if>
-		${content}
+		${content!}
 	</div>
 </div>
+</@cTpl>

@@ -33,42 +33,35 @@
  */
 package fr.paris.lutece.plugins.announce.service;
 
+import javax.cache.CacheException;
+
 import fr.paris.lutece.plugins.announce.business.Announce;
 import fr.paris.lutece.plugins.announce.business.Category;
 import fr.paris.lutece.portal.service.cache.AbstractCacheableService;
+import fr.paris.lutece.portal.service.util.AppLogService;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 
 /**
  * Cache service for announces
  */
-public final class AnnounceCacheService extends AbstractCacheableService
+@ApplicationScoped
+public class AnnounceCacheService extends AbstractCacheableService<String, Object>
 {
     private static final String CACHE_SERVICE_NAME = "announce.announceCacheService";
     private static final String ANNOUNCE_KEY_PREFIXE = "announce.announce.";
     private static final String CATEGORY_KEY_PREFIXE = "announce.category.";
     private static final String PUBLISHED_ANNOUNCES_ID_LIST_KEY_PREFIXE = "announce.announce.allPublishedId";
-    private static AnnounceCacheService _instance = new AnnounceCacheService( );
 
-    /**
-     * Private constructor
-     */
-    private AnnounceCacheService( )
+    @PostConstruct
+    public void init( )
     {
-        initCache( );
-    }
-
-    /**
-     * Get the instance of this service
-     * 
-     * @return the instance of this service
-     */
-    public static AnnounceCacheService getService( )
-    {
-        return _instance;
+        initCache( CACHE_SERVICE_NAME, String.class, Object.class );
     }
 
     /**
      * Get the cache key of an announce
-     * 
+     *
      * @param nIdAnnounce
      *            The id of the announce to get the key of
      * @return The cache key of the announce
@@ -80,7 +73,7 @@ public final class AnnounceCacheService extends AbstractCacheableService
 
     /**
      * Get the cache key of a category
-     * 
+     *
      * @param nIdCategory
      *            The id of the category to get the key of
      * @return The cache key of the category
@@ -137,44 +130,92 @@ public final class AnnounceCacheService extends AbstractCacheableService
      * {@inheritDoc}
      */
     @Override
-    public Object getFromCache( String strKey )
+    public Object get( String strKey )
     {
-        Object object = super.getFromCache( strKey );
-
-        if ( object != null )
+        if ( isCacheEnable( ) && isCacheAvailable( ) )
         {
-            if ( object instanceof Announce )
+            try
             {
-                return ( (Announce) object ).clone( );
-            }
+                Object object = super.get( strKey );
 
-            if ( object instanceof Category )
+                if ( object != null )
+                {
+                    if ( object instanceof Announce )
+                    {
+                        return ( (Announce) object ).clone( );
+                    }
+
+                    if ( object instanceof Category )
+                    {
+                        return ( (Category) object ).clone( );
+                    }
+                }
+
+                return object;
+            }
+            catch( CacheException | IllegalStateException e )
             {
-                return ( (Category) object ).clone( );
+                AppLogService.error( "Cache get error for key {}", strKey, e );
             }
         }
 
-        return object;
+        return null;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void putInCache( String strKey, Object object )
+    public void put( String strKey, Object object )
     {
-        Object clonedObject = object;
-
-        if ( object instanceof Announce )
+        if ( isCacheEnable( ) && isCacheAvailable( ) )
         {
-            clonedObject = ( (Announce) object ).clone( );
+            try
+            {
+                Object clonedObject = object;
+
+                if ( object instanceof Announce )
+                {
+                    clonedObject = ( (Announce) object ).clone( );
+                }
+
+                if ( object instanceof Category )
+                {
+                    clonedObject = ( (Category) object ).clone( );
+                }
+
+                super.put( strKey, clonedObject );
+            }
+            catch( CacheException | IllegalStateException e )
+            {
+                AppLogService.error( "Cache put error for key {}", strKey, e );
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean remove( String strKey )
+    {
+        if ( isCacheEnable( ) && isCacheAvailable( ) )
+        {
+            try
+            {
+                return super.remove( strKey );
+            }
+            catch( CacheException | IllegalStateException e )
+            {
+                AppLogService.error( "Cache remove error for key {}", strKey, e );
+            }
         }
 
-        if ( object instanceof Category )
-        {
-            clonedObject = ( (Category) object ).clone( );
-        }
+        return false;
+    }
 
-        super.putInCache( strKey, clonedObject );
+    private boolean isCacheAvailable( )
+    {
+        return _cache != null && !_cache.isClosed( );
     }
 }

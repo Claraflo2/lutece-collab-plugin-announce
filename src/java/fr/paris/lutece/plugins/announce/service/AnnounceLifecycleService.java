@@ -45,6 +45,8 @@ import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.plugin.PluginService;
 import fr.paris.lutece.portal.service.resource.ExtendableResourceRemovalListenerService;
 import fr.paris.lutece.portal.service.workflow.WorkflowService;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.sql.Timestamp;
 import java.util.List;
@@ -53,11 +55,21 @@ import java.util.List;
  * Service handling announce lifecycle operations (create, update, remove, publish, suspend). Centralizes cross-cutting concerns: indexation, cache
  * invalidation, publication timestamp, and cleanup.
  */
+@ApplicationScoped
 public class AnnounceLifecycleService
 {
     public static final String BEAN_NAME = "announce.announceLifecycleService";
 
     private Plugin _plugin = PluginService.getPlugin( AnnouncePlugin.PLUGIN_NAME );
+
+    @Inject
+    private AnnounceCacheService _announceCacheService;
+
+    @Inject
+    private AnnounceSearchService _announceSearchService;
+
+    @Inject
+    private WorkflowService _workflowService;
 
     /**
      * Create an announce with indexation and cache invalidation
@@ -75,7 +87,7 @@ public class AnnounceLifecycleService
 
         if ( isVisible( announce ) )
         {
-            AnnounceSearchService.getInstance( ).addIndexerAction( announce.getId( ), IndexerAction.TASK_CREATE, _plugin );
+            _announceSearchService.addIndexerAction( announce.getId( ), IndexerAction.TASK_CREATE, _plugin );
         }
 
         invalidateCache( announce.getId( ) );
@@ -99,14 +111,14 @@ public class AnnounceLifecycleService
 
         if ( isVisible( announce ) )
         {
-            AnnounceSearchService.getInstance( ).addIndexerAction( announce.getId( ), IndexerAction.TASK_MODIFY, _plugin );
+            _announceSearchService.addIndexerAction( announce.getId( ), IndexerAction.TASK_MODIFY, _plugin );
         }
         else
         {
-            AnnounceSearchService.getInstance( ).addIndexerAction( announce.getId( ), IndexerAction.TASK_DELETE, _plugin );
+            _announceSearchService.addIndexerAction( announce.getId( ), IndexerAction.TASK_DELETE, _plugin );
         }
 
-        AnnounceCacheService.getService( ).putInCache( AnnounceCacheService.getAnnounceCacheKey( announce.getId( ) ), announce );
+        _announceCacheService.put( AnnounceCacheService.getAnnounceCacheKey( announce.getId( ) ), announce );
         invalidateCache( announce.getId( ) );
 
         return announce;
@@ -120,7 +132,7 @@ public class AnnounceLifecycleService
      */
     public void remove( int nIdAnnounce )
     {
-        AnnounceSearchService.getInstance( ).addIndexerAction( nIdAnnounce, IndexerAction.TASK_DELETE, _plugin );
+        _announceSearchService.addIndexerAction( nIdAnnounce, IndexerAction.TASK_DELETE, _plugin );
 
         List<Integer> listIdResponse = AnnounceResponseHome.findListIdResponse( nIdAnnounce );
 
@@ -133,9 +145,9 @@ public class AnnounceLifecycleService
 
         ExtendableResourceRemovalListenerService.doRemoveResourceExtentions( Announce.RESOURCE_TYPE, Integer.toString( nIdAnnounce ) );
 
-        if ( WorkflowService.getInstance( ).isAvailable( ) )
+        if ( _workflowService.isAvailable( ) )
         {
-            WorkflowService.getInstance( ).doRemoveWorkFlowResource( nIdAnnounce, Announce.RESOURCE_TYPE );
+            _workflowService.doRemoveWorkFlowResource( nIdAnnounce, Announce.RESOURCE_TYPE );
         }
 
         AnnounceHome.remove( nIdAnnounce );
@@ -170,11 +182,11 @@ public class AnnounceLifecycleService
 
         if ( isVisible( announce ) )
         {
-            AnnounceSearchService.getInstance( ).addIndexerAction( announce.getId( ), IndexerAction.TASK_CREATE, _plugin );
+            _announceSearchService.addIndexerAction( announce.getId( ), IndexerAction.TASK_CREATE, _plugin );
         }
         else
         {
-            AnnounceSearchService.getInstance( ).addIndexerAction( announce.getId( ), IndexerAction.TASK_DELETE, _plugin );
+            _announceSearchService.addIndexerAction( announce.getId( ), IndexerAction.TASK_DELETE, _plugin );
         }
 
         invalidateCache( announce.getId( ) );
@@ -193,11 +205,11 @@ public class AnnounceLifecycleService
 
         if ( isVisible( announce ) )
         {
-            AnnounceSearchService.getInstance( ).addIndexerAction( announce.getId( ), IndexerAction.TASK_CREATE, _plugin );
+            _announceSearchService.addIndexerAction( announce.getId( ), IndexerAction.TASK_CREATE, _plugin );
         }
         else
         {
-            AnnounceSearchService.getInstance( ).addIndexerAction( announce.getId( ), IndexerAction.TASK_DELETE, _plugin );
+            _announceSearchService.addIndexerAction( announce.getId( ), IndexerAction.TASK_DELETE, _plugin );
         }
 
         invalidateCache( announce.getId( ) );
@@ -216,11 +228,11 @@ public class AnnounceLifecycleService
 
         if ( isVisible( announce ) )
         {
-            AnnounceSearchService.getInstance( ).addIndexerAction( announce.getId( ), IndexerAction.TASK_CREATE, _plugin );
+            _announceSearchService.addIndexerAction( announce.getId( ), IndexerAction.TASK_CREATE, _plugin );
         }
         else
         {
-            AnnounceSearchService.getInstance( ).addIndexerAction( announce.getId( ), IndexerAction.TASK_DELETE, _plugin );
+            _announceSearchService.addIndexerAction( announce.getId( ), IndexerAction.TASK_DELETE, _plugin );
         }
 
         invalidateCache( announce.getId( ) );
@@ -236,7 +248,7 @@ public class AnnounceLifecycleService
     {
         AnnounceHome.setHasNotified( announce );
 
-        AnnounceCacheService.getService( ).removeKey( AnnounceCacheService.getAnnounceCacheKey( announce.getId( ) ) );
+        _announceCacheService.remove( AnnounceCacheService.getAnnounceCacheKey( announce.getId( ) ) );
     }
 
     /**
@@ -314,17 +326,16 @@ public class AnnounceLifecycleService
      */
     private void invalidateCache( int nIdAnnounce )
     {
-        AnnounceCacheService cacheService = AnnounceCacheService.getService( );
-        cacheService.removeKey( AnnounceCacheService.getAnnounceCacheKey( nIdAnnounce ) );
+        _announceCacheService.remove( AnnounceCacheService.getAnnounceCacheKey( nIdAnnounce ) );
 
         String strPublishedPrefix = AnnounceCacheService.getListIdPublishedAnnouncesCacheKeyPrefix( );
         String strCategoryPrefix = AnnounceCacheService.getCategoryCacheKeyPrefix( );
 
-        for ( String strKey : cacheService.getKeys( ) )
+        for ( String strKey : _announceCacheService.getKeys( ) )
         {
             if ( strKey.startsWith( strPublishedPrefix ) || strKey.startsWith( strCategoryPrefix ) )
             {
-                cacheService.removeKey( strKey );
+                _announceCacheService.remove( strKey );
             }
         }
     }

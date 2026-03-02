@@ -36,7 +36,8 @@ package fr.paris.lutece.plugins.announce.business;
 import fr.paris.lutece.plugins.announce.service.AnnouncePlugin;
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.plugin.PluginService;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
+
+import jakarta.enterprise.inject.spi.CDI;
 
 import java.util.List;
 
@@ -45,7 +46,7 @@ import java.util.List;
  */
 public final class AnnounceSearchFilterHome
 {
-    private static IAnnounceSearchFilterDAO _dao = SpringContextService.getBean( "announce.announceSearchFilterDAO" );
+    private static IAnnounceSearchFilterDAO _dao = CDI.current( ).select( IAnnounceSearchFilterDAO.class ).get( );
     private static Plugin _plugin = PluginService.getPlugin( AnnouncePlugin.PLUGIN_NAME );
 
     private AnnounceSearchFilterHome( )

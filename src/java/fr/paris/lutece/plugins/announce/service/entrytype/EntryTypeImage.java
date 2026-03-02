@@ -33,7 +33,6 @@
  */
 package fr.paris.lutece.plugins.announce.service.entrytype;
 
-import fr.paris.lutece.plugins.announce.service.upload.AnnounceAsynchronousUploadHandler;
 import fr.paris.lutece.plugins.genericattributes.business.Entry;
 import fr.paris.lutece.plugins.genericattributes.business.GenericAttributeError;
 import fr.paris.lutece.plugins.genericattributes.business.MandatoryError;
@@ -48,7 +47,7 @@ import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.web.upload.MultipartHttpServletRequest;
 import fr.paris.lutece.util.filesystem.FileSystemUtil;
 
-import org.apache.commons.fileupload.FileItem;
+import fr.paris.lutece.portal.service.upload.MultipartItem;
 import org.apache.commons.lang3.StringUtils;
 
 import java.awt.image.BufferedImage;
@@ -61,19 +60,28 @@ import java.util.Locale;
 
 import javax.imageio.ImageIO;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  *
  * class EntryTypeImage
  *
  */
+@ApplicationScoped
+@Named( "announce.entryTypeImage" )
 public class EntryTypeImage extends AbstractEntryTypeFile
 {
     /**
      * Name of the bean of this service
      */
     public static final String BEAN_NAME = "announce.entryTypeImage";
+
+    @Inject
+    @Named( "announce.announceAsynchronousUploadHandler" )
+    private AbstractGenAttUploadHandler _announceUploadHandler;
     private static final String MESSAGE_ERROR_NOT_AN_IMAGE = "announce.message.notAnImage";
     private static final String TEMPLATE_CREATE = "admin/plugins/announce/entries/create_entry_type_image.html";
     private static final String TEMPLATE_MODIFY = "admin/plugins/announce/entries/modify_entry_type_image.html";
@@ -113,7 +121,7 @@ public class EntryTypeImage extends AbstractEntryTypeFile
     @Override
     public GenericAttributeError getResponseData( Entry entry, HttpServletRequest request, List<Response> listResponse, Locale locale )
     {
-        List<FileItem> listFilesSource = null;
+        List<MultipartItem> listFilesSource = null;
 
         if ( request instanceof MultipartHttpServletRequest )
         {
@@ -121,7 +129,7 @@ public class EntryTypeImage extends AbstractEntryTypeFile
             String strIdEntry = Integer.toString( entry.getIdEntry( ) );
             String strAttributePrefix = "attribute" + strIdEntry;
 
-            List<FileItem> asynchronousFileItem = getFileSources( request, strAttributePrefix );
+            List<MultipartItem> asynchronousFileItem = getFileSources( request, strAttributePrefix );
 
             if ( asynchronousFileItem != null )
             {
@@ -142,7 +150,7 @@ public class EntryTypeImage extends AbstractEntryTypeFile
                     listResponse.add( response );
                 }
 
-                for ( FileItem fileItem : listFilesSource )
+                for ( MultipartItem fileItem : listFilesSource )
                 {
                     String strFilename = ( fileItem != null ) ? FileUploadService.getFileNameOnly( fileItem ) : StringUtils.EMPTY;
 
@@ -217,7 +225,7 @@ public class EntryTypeImage extends AbstractEntryTypeFile
     @Override
     public AbstractGenAttUploadHandler getAsynchronousUploadHandler( )
     {
-        return AnnounceAsynchronousUploadHandler.getHandler( );
+        return _announceUploadHandler;
     }
 
     /**

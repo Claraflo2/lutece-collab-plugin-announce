@@ -37,14 +37,20 @@ import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.List;
 
+import org.junit.jupiter.api.Test;
+
 import fr.paris.lutece.plugins.announce.service.AnnounceCacheService;
 import fr.paris.lutece.test.LuteceTestCase;
+import jakarta.inject.Inject;
 
 /**
  * Announce business layer CRUD tests
  */
 public class AnnounceTest extends LuteceTestCase
 {
+    @Inject
+    private AnnounceCacheService _announceCacheService;
+
     private static final String SECTOR_LABEL1 = "Test Sector 1";
     private static final String SECTOR_LABEL2 = "Test Sector 2";
     private static final String SECTOR_DESCRIPTION1 = "Description of test sector 1";
@@ -63,6 +69,7 @@ public class AnnounceTest extends LuteceTestCase
     /**
      * Test CRUD operations on Sector, Category and Announce entities
      */
+    @Test
     public void testBusinessAnnounce( )
     {
         // ---- SECTOR CRUD ----
@@ -177,7 +184,7 @@ public class AnnounceTest extends LuteceTestCase
         announce.setPrice( 25.0 );
         announce.setPublished( true );
         AnnounceHome.update( announce );
-        AnnounceCacheService.getService( ).removeKey( AnnounceCacheService.getAnnounceCacheKey( announce.getId( ) ) );
+        _announceCacheService.remove( AnnounceCacheService.getAnnounceCacheKey( announce.getId( ) ) );
 
         announceStored = AnnounceHome.findByPrimaryKey( announce.getId( ) );
         assertNotNull( announceStored );
@@ -192,7 +199,7 @@ public class AnnounceTest extends LuteceTestCase
 
         // Delete announce
         AnnounceHome.remove( announce.getId( ) );
-        AnnounceCacheService.getService( ).removeKey( AnnounceCacheService.getAnnounceCacheKey( announce.getId( ) ) );
+        _announceCacheService.remove( AnnounceCacheService.getAnnounceCacheKey( announce.getId( ) ) );
         announceStored = AnnounceHome.findByPrimaryKey( announce.getId( ) );
         assertNull( announceStored );
 

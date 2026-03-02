@@ -36,11 +36,12 @@ package fr.paris.lutece.plugins.announce.web;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -58,18 +59,20 @@ import fr.paris.lutece.portal.service.message.AdminMessageService;
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.rbac.RBACService;
 import fr.paris.lutece.portal.service.template.AppTemplateService;
-import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.portal.web.admin.PluginAdminPageJspBean;
+import fr.paris.lutece.portal.web.cdi.mvc.Models;
 import fr.paris.lutece.portal.web.constants.Messages;
+import fr.paris.lutece.portal.web.util.IPager;
+import fr.paris.lutece.portal.web.util.Pager;
 import fr.paris.lutece.util.ReferenceList;
-import fr.paris.lutece.util.html.AbstractPaginator;
 import fr.paris.lutece.util.html.HtmlTemplate;
-import fr.paris.lutece.util.html.Paginator;
 import fr.paris.lutece.util.url.UrlItem;
 
 /**
  * This class provides the user interface to manage sector features ( manage, create, modify, remove )
  */
+@SessionScoped
+@Named
 public class SectorJspBean extends PluginAdminPageJspBean
 {
     /**
@@ -127,8 +130,11 @@ public class SectorJspBean extends PluginAdminPageJspBean
     private static final String SESSION_SORT_ASC = "announce.sessionSectorSortAsc";
 
     /* Variables */
-    private String _strCurrentPageIndex;
-    private int _nItemsPerPage;
+    @Inject
+    private Models _models;
+    @Inject
+    @Pager( listBookmark = "list_sectors", defaultItemsPerPage = "announce.sector.itemsPerPage" )
+    private IPager<Sector, Void> _pager;
 
     /**
      * {@inheritDoc}
@@ -156,10 +162,6 @@ public class SectorJspBean extends PluginAdminPageJspBean
     public String getManageSectors( HttpServletRequest request )
     {
         setPageTitleProperty( PROPERTY_PAGE_TITLE_MANAGE_FIELDS );
-
-        _strCurrentPageIndex = AbstractPaginator.getPageIndex( request, AbstractPaginator.PARAMETER_PAGE_INDEX, _strCurrentPageIndex );
-        int defaultItemsPerPage = AppPropertiesService.getPropertyInt( PROPERTY_DEFAULT_LIST_FIELD_PER_PAGE, 50 );
-        _nItemsPerPage = AbstractPaginator.getItemsPerPage( request, AbstractPaginator.PARAMETER_ITEMS_PER_PAGE, _nItemsPerPage, defaultItemsPerPage );
 
         List<Sector> listSectors = new ArrayList<>( SectorHome.findAll( ) );
 
@@ -189,16 +191,13 @@ public class SectorJspBean extends PluginAdminPageJspBean
             }
         }
 
-        Paginator<Sector> paginator = new Paginator<>( listSectors, _nItemsPerPage, getUrlPage( ), PARAMETER_PAGE_INDEX, _strCurrentPageIndex );
+        _pager.withBaseUrl( getUrlPage( ) )
+                .withListItem( listSectors )
+                .populateModels( request, _models, getLocale( ) );
 
-        Map<String, Object> model = new HashMap<>( );
+        _models.put( MARK_FIELD_ORDER_LIST, getSectorOrderList( ) );
 
-        model.put( MARK_NB_ITEMS_PER_PAGE, "" + _nItemsPerPage );
-        model.put( MARK_PAGINATOR, paginator );
-        model.put( MARK_LIST_FIELDS, paginator.getPageItems( ) );
-        model.put( MARK_FIELD_ORDER_LIST, getSectorOrderList( ) );
-
-        HtmlTemplate templateList = AppTemplateService.getTemplate( TEMPLATE_MANAGE_FIELDS, getLocale( ), model );
+        HtmlTemplate templateList = AppTemplateService.getTemplate( TEMPLATE_MANAGE_FIELDS, getLocale( ), _models );
 
         return getAdminPage( templateList.getHtml( ) );
     }
@@ -225,10 +224,9 @@ public class SectorJspBean extends PluginAdminPageJspBean
 
         Collection<Sector> listSectors = SectorHome.findAll( );
 
-        HashMap<String, Object> model = new HashMap<>( );
-        model.put( MARK_LIST_FIELDS, listSectors );
+        _models.put( MARK_LIST_FIELDS, listSectors );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_CREATE_FIELD, getLocale( ), model );
+        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_CREATE_FIELD, getLocale( ), _models );
 
         return getAdminPage( template.getHtml( ) );
     }
@@ -297,10 +295,9 @@ public class SectorJspBean extends PluginAdminPageJspBean
         setPageTitleProperty( PROPERTY_PAGE_TITLE_MODIFY_FIELD );
 
         Sector sector = getAuthorizedSector( request, SectorResourceIdService.PERMISSION_MODIFY );
-        HashMap<String, Object> model = new HashMap<>( );
-        model.put( MARK_FIELD, sector );
+        _models.put( MARK_FIELD, sector );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_MODIFY_FIELD, getLocale( ), model );
+        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_MODIFY_FIELD, getLocale( ), _models );
 
         return getAdminPage( template.getHtml( ) );
     }

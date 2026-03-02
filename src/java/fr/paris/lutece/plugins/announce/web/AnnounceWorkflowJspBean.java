@@ -45,14 +45,18 @@ import fr.paris.lutece.portal.util.mvc.commons.annotations.View;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.HashMap;
-import java.util.Map;
+import fr.paris.lutece.portal.web.cdi.mvc.Models;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Announce workflow JSP Bean
  */
+@RequestScoped
+@Named
 @Controller( controllerJsp = "ManageAnnounceWorkflow.jsp", controllerPath = "jsp/admin/plugins/announce/", right = AnnounceUserJspBean.RIGHT_MANAGE_ANNOUNCE )
 public class AnnounceWorkflowJspBean extends MVCAdminJspBean
 {
@@ -78,6 +82,11 @@ public class AnnounceWorkflowJspBean extends MVCAdminJspBean
     // Actions
     private static final String ACTION_DO_PROCESS_WORKFLOW_ACTION = "doProcessWorkflowAction";
 
+    @Inject
+    private WorkflowService _workflowService;
+    @Inject
+    private Models _models;
+
     /**
      * Get the workflow action form before processing the action. If the action does not need to display any form, then redirect the user to the workflow action
      * processing page.
@@ -99,18 +108,16 @@ public class AnnounceWorkflowJspBean extends MVCAdminJspBean
             int nIdAnnounce = Integer.parseInt( strIdAnnounce );
             User user = getUser( );
 
-            if ( WorkflowService.getInstance( ).isDisplayTasksForm( nIdAction, getLocale( ) ) )
+            if ( _workflowService.isDisplayTasksForm( nIdAction, getLocale( ) ) )
             {
-                String strHtmlTasksForm = WorkflowService.getInstance( ).getDisplayTasksForm( nIdAnnounce, Announce.RESOURCE_TYPE, nIdAction, request,
+                String strHtmlTasksForm = _workflowService.getDisplayTasksForm( nIdAnnounce, Announce.RESOURCE_TYPE, nIdAction, request,
                         getLocale( ), user );
 
-                Map<String, Object> model = new HashMap<>( );
+                _models.put( MARK_TASKS_FORM, strHtmlTasksForm );
+                _models.put( PARAMETER_ID_ACTION, nIdAction );
+                _models.put( PARAMETER_ID_ANNOUNCE, nIdAnnounce );
 
-                model.put( MARK_TASKS_FORM, strHtmlTasksForm );
-                model.put( PARAMETER_ID_ACTION, nIdAction );
-                model.put( PARAMETER_ID_ANNOUNCE, nIdAnnounce );
-
-                return getPage( PROPERTY_PAGE_TITLE_TASKS_FORM_WORKFLOW, TEMPLATE_TASKS_FORM_WORKFLOW, model );
+                return getPage( PROPERTY_PAGE_TITLE_TASKS_FORM_WORKFLOW, TEMPLATE_TASKS_FORM_WORKFLOW, _models );
             }
 
             return doProcessWorkflowAction( request );
@@ -148,9 +155,9 @@ public class AnnounceWorkflowJspBean extends MVCAdminJspBean
 
             if ( request.getParameter( PARAMETER_BACK ) == null )
             {
-                if ( WorkflowService.getInstance( ).isDisplayTasksForm( nIdAction, getLocale( ) ) )
+                if ( _workflowService.isDisplayTasksForm( nIdAction, getLocale( ) ) )
                 {
-                    String strError = WorkflowService.getInstance( ).doSaveTasksForm( nIdAnnounce, Announce.RESOURCE_TYPE, nIdAction,
+                    String strError = _workflowService.doSaveTasksForm( nIdAnnounce, Announce.RESOURCE_TYPE, nIdAction,
                             announce.getCategory( ).getId( ), request, getLocale( ), user );
 
                     if ( strError != null )
@@ -159,7 +166,7 @@ public class AnnounceWorkflowJspBean extends MVCAdminJspBean
                     }
                 }
 
-                WorkflowService.getInstance( ).doProcessAction( nIdAnnounce, Announce.RESOURCE_TYPE, nIdAction, announce.getCategory( ).getId( ), request,
+                _workflowService.doProcessAction( nIdAnnounce, Announce.RESOURCE_TYPE, nIdAction, announce.getCategory( ).getId( ), request,
                         getLocale( ), false, user );
             }
         }

@@ -37,10 +37,13 @@ import fr.paris.lutece.plugins.announce.service.AnnouncePlugin;
 import fr.paris.lutece.portal.business.portlet.Portlet;
 import fr.paris.lutece.util.sql.DAOUtil;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 /**
  * this class provides Data Access methods for LastAnnouncePortlet objects
  */
-public final class LastAnnouncesPortletDAO implements ILastAnnouncesPortletDAO
+@ApplicationScoped
+public class LastAnnouncesPortletDAO implements ILastAnnouncesPortletDAO
 {
     private static final String SQL_QUERY_INSERT = " INSERT INTO announce_portlet_last_announces ( id_portlet, nb_announces ) VALUES (?,?) ";
     private static final String SQL_QUERY_DELETE = " DELETE FROM announce_portlet_last_announces WHERE id_portlet = ? ";

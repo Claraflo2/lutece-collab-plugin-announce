@@ -34,33 +34,25 @@
 package fr.paris.lutece.plugins.announce.service.upload;
 
 import fr.paris.lutece.plugins.genericattributes.service.upload.AbstractGenAttUploadHandler;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
 
 /**
  *
  * FormAsynchronousUploadHandler.
- * 
+ *
  * @see #getFileItems(String, String)
  * @see #removeFileItem(String, String, int)
  *
  */
+@ApplicationScoped
+@Named( "announce.announceAsynchronousUploadHandler" )
 public class AnnounceAsynchronousUploadHandler extends AbstractGenAttUploadHandler
 {
     private static final String UPLOAD_SUBMIT_PREFIX = "_announce_upload_submit_";
     private static final String UPLOAD_DELETE_PREFIX = "_announce_upload_delete_";
     private static final String UPLOAD_CHECKBOX_PREFIX = "_announce_upload_checkbox_";
-    private static final String BEAN_ANNOUNCE_ASYNCHRONOUS_UPLOAD_HANDLER = "announce.announceAsynchronousUploadHandler";
     private static final String HANDLER_NAME = "announceAsynchronousUploadHandler";
-
-    /**
-     * Get the handler
-     * 
-     * @return the handler
-     */
-    public static AnnounceAsynchronousUploadHandler getHandler( )
-    {
-        return SpringContextService.getBean( BEAN_ANNOUNCE_ASYNCHRONOUS_UPLOAD_HANDLER );
-    }
 
     /**
      * {@inheritDoc}

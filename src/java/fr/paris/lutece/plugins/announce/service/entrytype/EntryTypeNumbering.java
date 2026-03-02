@@ -35,10 +35,14 @@ package fr.paris.lutece.plugins.announce.service.entrytype;
 
 import fr.paris.lutece.plugins.genericattributes.business.Entry;
 import fr.paris.lutece.plugins.genericattributes.service.entrytype.AbstractEntryTypeNumbering;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
 
 /**
  * EntryTypeNumbering
  */
+@ApplicationScoped
+@Named( "announce.entryTypeNumbering" )
 public class EntryTypeNumbering extends AbstractEntryTypeNumbering
 {
     // TEMPLATES

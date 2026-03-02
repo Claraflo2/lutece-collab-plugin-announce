@@ -1,9 +1,9 @@
-<jsp:useBean id="announceWorkflow" scope="session" class="fr.paris.lutece.plugins.announce.web.AnnounceWorkflowJspBean" />
-<% String strContent = announceWorkflow.processController ( request , response ); %>
-
 <%@ page errorPage="../../ErrorPage.jsp" %>
+
+${ pageContext.setAttribute( 'strContent', announceWorkflowJspBean.processController( pageContext.request , pageContext.response ) ) }
+
 <jsp:include page="../../AdminHeader.jsp" />
 
-<%= strContent %>
+${ pageContext.getAttribute( 'strContent' ) }
 
 <%@ include file="../../AdminFooter.jsp" %>

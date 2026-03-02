@@ -43,11 +43,14 @@ import fr.paris.lutece.portal.service.resource.IExtendableResourceService;
 
 import org.apache.commons.lang3.StringUtils;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import java.util.Locale;
 
 /**
  * Extendable resource service for announces
  */
+@ApplicationScoped
 public class AnnounceExtendableResourceService implements IExtendableResourceService
 {
     private static final String MESSAGE_ANNOUNCE_RESOURCE_TYPE = "announce.announceResourceType.description";

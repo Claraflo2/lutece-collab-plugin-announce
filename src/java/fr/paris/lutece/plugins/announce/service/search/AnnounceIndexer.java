@@ -39,6 +39,7 @@ import fr.paris.lutece.plugins.announce.service.announcesearch.DefaultAnnounceIn
 import fr.paris.lutece.portal.service.message.SiteMessageException;
 import fr.paris.lutece.portal.service.search.SearchIndexer;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.apache.lucene.document.Document;
 
@@ -73,7 +74,7 @@ public class AnnounceIndexer implements SearchIndexer
     @Override
     public void indexDocuments( ) throws IOException, InterruptedException, SiteMessageException
     {
-        AnnounceSearchService.getInstance( ).processIndexing( true );
+        CDI.current( ).select( AnnounceSearchService.class ).get( ).processIndexing( true );
         DefaultAnnounceIndexer.getDocuments( "" );
     }
 

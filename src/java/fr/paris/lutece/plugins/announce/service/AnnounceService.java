@@ -34,13 +34,12 @@
 package fr.paris.lutece.plugins.announce.service;
 
 import fr.paris.lutece.plugins.announce.business.Announce;
-import fr.paris.lutece.plugins.announce.business.AnnounceHome;
 import fr.paris.lutece.plugins.announce.business.AnnounceResponseHome;
 import fr.paris.lutece.plugins.announce.business.Category;
 import fr.paris.lutece.plugins.announce.business.CategoryHome;
 import fr.paris.lutece.plugins.announce.business.Sector;
 import fr.paris.lutece.plugins.announce.business.SectorHome;
-import fr.paris.lutece.plugins.announce.service.upload.AnnounceAsynchronousUploadHandler;
+import fr.paris.lutece.plugins.genericattributes.service.upload.AbstractGenAttUploadHandler;
 import fr.paris.lutece.plugins.genericattributes.business.Entry;
 import fr.paris.lutece.plugins.genericattributes.business.EntryFilter;
 import fr.paris.lutece.plugins.genericattributes.business.EntryHome;
@@ -58,7 +57,6 @@ import fr.paris.lutece.portal.business.physicalfile.PhysicalFile;
 import fr.paris.lutece.portal.business.physicalfile.PhysicalFileHome;
 import fr.paris.lutece.portal.service.content.XPageAppService;
 import fr.paris.lutece.portal.service.i18n.I18nService;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
 import fr.paris.lutece.portal.service.security.LuteceUser;
 import fr.paris.lutece.portal.service.security.SecurityService;
 import fr.paris.lutece.portal.service.security.UserNotSignedException;
@@ -69,8 +67,8 @@ import fr.paris.lutece.util.file.FileUtil;
 import fr.paris.lutece.util.html.HtmlTemplate;
 import fr.paris.lutece.util.url.UrlItem;
 
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.collections.CollectionUtils;
+import fr.paris.lutece.portal.service.upload.MultipartItem;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
@@ -86,11 +84,16 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Service for announces
  */
+@ApplicationScoped
 public class AnnounceService implements Serializable
 {
     /**
@@ -103,6 +106,10 @@ public class AnnounceService implements Serializable
      */
     public static final String BEAN_NAME = "announce.announceService";
     private static final long serialVersionUID = 6197939507943704211L;
+
+    @Inject
+    @Named( "announce.announceAsynchronousUploadHandler" )
+    private transient AbstractGenAttUploadHandler _announceUploadHandler;
     private static final String VIEW_GET_FORM = "viewForm";
     private static final String PARAMETER_ID_CATEGORY = "id_form";
     private static final String PREFIX_ATTRIBUTE = "attribute";
@@ -173,9 +180,9 @@ public class AnnounceService implements Serializable
             {
                 for ( Response response : announce.getListResponse( ) )
                 {
-                    if ( ( response.getFile( ) != null ) && ( response.getFile( ).getIdFile( ) > 0 ) )
+                    if ( ( response.getFile( ) != null ) && ( response.getFile( ).getFileKey( ) != null ) )
                     {
-                        File file = FileHome.findByPrimaryKey( response.getFile( ).getIdFile( ) );
+                        File file = FileHome.findByPrimaryKey( Integer.parseInt( response.getFile( ).getFileKey( ) ) );
 
                         if ( ( file == null ) || ( file.getPhysicalFile( ) == null ) )
                         {
@@ -189,8 +196,8 @@ public class AnnounceService implements Serializable
                             continue;
                         }
 
-                        FileItem fileItem = new GenAttFileItem( physicalFile.getValue( ), file.getTitle( ) );
-                        AnnounceAsynchronousUploadHandler.getHandler( ).addFileItemToUploadedFilesList( fileItem,
+                        MultipartItem fileItem = new GenAttFileItem( physicalFile.getValue( ), file.getTitle( ) );
+                        _announceUploadHandler.addFileItemToUploadedFilesList( fileItem,
                                 IEntryTypeService.PREFIX_ATTRIBUTE + Integer.toString( response.getEntry( ).getIdEntry( ) ), request );
                     }
                 }
@@ -537,7 +544,7 @@ public class AnnounceService implements Serializable
      *            The list of responses to process (modified in place for field enrichment)
      * @return The list of unique geolocation entries found
      */
-    public static List<Entry> extractGeolocationEntries( List<Response> listResponses )
+    public List<Entry> extractGeolocationEntries( List<Response> listResponses )
     {
         List<Entry> listGeolocalisation = new ArrayList<>( );
 
@@ -620,7 +627,7 @@ public class AnnounceService implements Serializable
      *            The locale for error messages
      * @return The list of validation errors, empty if valid
      */
-    public static List<GenericAttributeError> validateAnnounceFormFields( String strTitle, String strDescription, String strContact, Category category,
+    public List<GenericAttributeError> validateAnnounceFormFields( String strTitle, String strDescription, String strContact, Category category,
             PriceParseResult priceResult, Locale locale )
     {
         List<GenericAttributeError> listErrors = new ArrayList<>( );
@@ -652,7 +659,7 @@ public class AnnounceService implements Serializable
      *            The sector
      * @return true if the announce requires moderation (should NOT be published), false otherwise
      */
-    public static boolean isModerationRequired( Category category, Sector sector )
+    public boolean isModerationRequired( Category category, Sector sector )
     {
         switch( category.getAnnouncesValidation( ) )
         {
@@ -707,7 +714,7 @@ public class AnnounceService implements Serializable
      *            The list of responses to check
      * @return true if at least one response contains an image
      */
-    public static boolean detectHasPictures( List<Response> listResponses )
+    public boolean detectHasPictures( List<Response> listResponses )
     {
         for ( Response response : listResponses )
         {
@@ -725,7 +732,7 @@ public class AnnounceService implements Serializable
      *
      * @return The enriched list of sectors
      */
-    public static Collection<Sector> getSectorList( )
+    public Collection<Sector> getSectorList( )
     {
         Collection<Sector> listSectors = SectorHome.findAll( );
 
@@ -753,7 +760,7 @@ public class AnnounceService implements Serializable
      *            The sector id, or 0 for all categories
      * @return The list of categories
      */
-    public static Collection<Category> getCategoryList( int nIdSector )
+    public Collection<Category> getCategoryList( int nIdSector )
     {
         if ( nIdSector == 0 )
         {
@@ -780,7 +787,7 @@ public class AnnounceService implements Serializable
      *            The id of the category to get the entry hierarchy
      * @return The sorted list of responses
      */
-    public static List<Response> sortResponsesByEntryHierarchy( List<Response> listResponses, int nIdCategory )
+    public List<Response> sortResponsesByEntryHierarchy( List<Response> listResponses, int nIdCategory )
     {
         // Build the ordered list of entry IDs following the form hierarchy
         List<Integer> listOrderedEntryIds = new ArrayList<>( );
@@ -825,7 +832,7 @@ public class AnnounceService implements Serializable
      * @param listOrderedEntryIds
      *            The list to add IDs to
      */
-    private static void collectEntryIdsRecursive( int nIdEntry, List<Integer> listOrderedEntryIds )
+    private void collectEntryIdsRecursive( int nIdEntry, List<Integer> listOrderedEntryIds )
     {
         Entry entry = EntryHome.findByPrimaryKey( nIdEntry );
 
@@ -880,9 +887,9 @@ public class AnnounceService implements Serializable
      *
      * @return true if at least one IAnnounceSubscriptionProvider bean is deployed
      */
-    public static boolean isSubscribeModuleAvailable( )
+    public boolean isSubscribeModuleAvailable( )
     {
-        return !SpringContextService.getBeansOfType( IAnnounceSubscriptionProvider.class ).isEmpty( );
+        return CDI.current( ).select( IAnnounceSubscriptionProvider.class ).stream( ).findFirst( ).isPresent( );
     }
 
     // -----------------------------------------------------------------------

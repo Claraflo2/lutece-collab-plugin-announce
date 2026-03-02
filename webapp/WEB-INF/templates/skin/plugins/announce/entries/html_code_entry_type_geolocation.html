@@ -1,57 +1,86 @@
+<#assign useAddressAutocomplete = entry.mapProvider?? && entry.mapProvider?has_content && (entry.mapProvider.key! == 'wsaddress' || entry.mapProvider.key! == 'openstreetmap') />
+<#if useAddressAutocomplete>
+	<#include "/skin/plugins/address/modules/autocomplete/include/suggestPOI.html" />
+</#if>
 <#if entry.fields?has_content>
 	<#assign addressField = getFieldValueByCode( entry, "address" )>
 	<#assign xField = getFieldValueByCode( entry, "X" )>
 	<#assign yField = getFieldValueByCode( entry, "Y" )>
 </#if>
-<div class="row mb-3">
-	<label class="col-sm-2 col-form-label" for="form${entry.idEntry}_address" id="attribute${entry.idEntry}">${entry.title}<#if entry.mandatory>	*</#if></label>
-	<div class="col-sm-10">
-    <#if list_responses??>
-		<#list list_responses as response>
-			<#if response.entry.idEntry == entry.idEntry && response.toStringValueResponse??>
-				<#if response.field.title??>
-					<#if response.field.title == "X">
-						<#assign lat = response.toStringValueResponse />
-						<input type="hidden" name="${entry.idEntry}_x" id="${entry.idEntry}_x" value="${response.toStringValueResponse!}"/>
-					<#elseif response.field.title == "Y">
-						<#assign lon = response.toStringValueResponse />
-						<input type="hidden" name="${entry.idEntry}_y" id="${entry.idEntry}_y" value="${response.toStringValueResponse!}"/>
-					<#elseif response.field.title == "idAddress">
-						<input type="hidden" name="${entry.idEntry}_idAddress" id="${entry.idEntry}_idAddress" value="${response.toStringValueResponse!}"/>
-					<#else>
-						<input type="text" class="form-control<#if response.entry.error??> is-invalid</#if>" name="${entry.idEntry}_address" id="${entry.idEntry}_address" size="50" value="${response.toStringValueResponse!}" <#if entry.mandatory>required</#if> />
-					</#if>
+<#assign addressValue = "" />
+<#assign idAddressValue = "" />
+<#assign xValue = "" />
+<#assign yValue = "" />
+<#assign geometryValue = "" />
+<#assign hasError = false />
+<#if list_responses??>
+	<#list list_responses as response>
+		<#if response.entry.idEntry == entry.idEntry && response.toStringValueResponse??>
+			<#if response.field?? && response.field.code??>
+				<#if response.field.code == "X">
+					<#assign xValue = response.toStringValueResponse />
+				<#elseif response.field.code == "Y">
+					<#assign yValue = response.toStringValueResponse />
+				<#elseif response.field.code == "idAddress">
+					<#assign idAddressValue = response.toStringValueResponse />
+				<#elseif response.field.code == "address">
+					<#assign addressValue = response.toStringValueResponse />
+				<#elseif response.field.code == "geometry">
+					<#assign geometryValue = response.toStringValueResponse />
 				</#if>
 			</#if>
-		</#list>
-	<#else>
-		<input type="text" class="form-control" value="" name="${entry.idEntry}_address" id="${entry.idEntry}_address" size="50" <#if entry.mandatory>required</#if> />
-		<input type="hidden" name="${entry.idEntry}_x" id="${entry.idEntry}_x" value=""/>
-		<input type="hidden" name="${entry.idEntry}_y" id="${entry.idEntry}_y" value=""/>
-		<input type="hidden" name="${entry.idEntry}_idAddress" id="${entry.idEntry}_idAddress" value=""/>
-	</#if>
-	<#if entry.helpMessage?? && entry.helpMessage != ''>
-		<p class="form-text">${entry.helpMessage}</p>
-	</#if>
-
-	<#if list_responses??>
-	<#assign show_error = 0>
-		<#list list_responses as response>
-			<#if response.entry.idEntry == entry.idEntry && response.entry.error?? && show_error == 0>
-			<#assign show_error = 1>
-				<div class="alert alert-danger">
-					<#assign error = response.entry.error>
-					<#if error.mandatoryError>
-						#i18n{announce.message.mandatory.entry}
-					<#else>
-						${error.errorMessage}
-					</#if>
-				</div>
+			<#if response.entry.error??>
+				<#assign hasError = true />
 			</#if>
-		</#list>
-	</#if>
-	<#if entry.mapProvider?has_content>
-		<#include entry.mapProvider.htmlCode />
-	</#if>
+		</#if>
+	</#list>
+</#if>
+<div class="row mb-3">
+	<label class="col-sm-2 col-form-label" for="${entry.idEntry}_address" id="attribute${entry.idEntry}">${entry.title}<#if entry.mandatory> *</#if></label>
+	<div class="col-sm-10">
+		<#if useAddressAutocomplete>
+			<@suggestPOIInput id="${entry.idEntry}_address" name="${entry.idEntry}_address" currentValue="${addressValue!}" required=entry.mandatory cssClass="form-geoloc<#if hasError> is-invalid</#if>" />
+		<#else>
+			<input type="text" class="form-control<#if hasError> is-invalid</#if>" name="${entry.idEntry}_address" id="${entry.idEntry}_address" value="${addressValue!}" <#if entry.mandatory>required</#if> />
+		</#if>
+		<input type="hidden" name="${entry.idEntry}_idAddress" id="${entry.idEntry}_idAddress" value="${idAddressValue!}"/>
+		<input type="hidden" name="${entry.idEntry}_x" id="${entry.idEntry}_x" value="${xValue!}"/>
+		<input type="hidden" name="${entry.idEntry}_y" id="${entry.idEntry}_y" value="${yValue!}"/>
+		<input type="hidden" name="${entry.idEntry}_geometry" id="${entry.idEntry}_geometry" value="${geometryValue!}"/>
+		<#if hasError>
+			<div class="invalid-feedback">#i18n{announce.message.mandatory.entry}</div>
+		</#if>
+		<#if entry.helpMessage?? && entry.helpMessage != ''>
+			<p class="form-text">${entry.helpMessage}</p>
+		</#if>
+		<#if entry.mapProvider?has_content>
+			<#include entry.mapProvider.htmlCode />
+			<#if useAddressAutocomplete>
+				<@setupSuggestPOI />
+				<script>
+				document.addEventListener('DOMContentLoaded', function() {
+					var autocompleteContainer = document.getElementById('${entry.idEntry}_address');
+					var inputIdAddress = document.getElementById('${entry.idEntry}_idAddress');
+					var inputX = document.getElementById('${entry.idEntry}_x');
+					var inputY = document.getElementById('${entry.idEntry}_y');
+					var inputGeometry = document.getElementById('${entry.idEntry}_geometry');
+
+					var suggestPoi = new SuggestPOI(autocompleteContainer, {
+						allowFreeText: true
+					});
+
+					autocompleteContainer.addEventListener(SuggestPOI.EVT_SELECT, function(event) {
+						var poi = event.detail.poi;
+						if (poi) {
+							inputGeometry.value = poi.type || '';
+							inputY.value = poi.y || '';
+							inputX.value = poi.x || '';
+							inputIdAddress.value = poi.id || '';
+						}
+					});
+				});
+				</script>
+			</#if>
+		</#if>
 	</div>
 </div>

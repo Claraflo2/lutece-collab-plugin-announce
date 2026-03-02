@@ -39,7 +39,8 @@ import fr.paris.lutece.plugins.genericattributes.business.ResponseHome;
 import fr.paris.lutece.portal.business.file.FileHome;
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.plugin.PluginService;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
+
+import jakarta.enterprise.inject.spi.CDI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +50,7 @@ import java.util.List;
  */
 public final class AnnounceResponseHome
 {
-    private static IAnnounceDAO _dao = SpringContextService.getBean( "announce.announceDAO" );
+    private static IAnnounceDAO _dao = CDI.current( ).select( IAnnounceDAO.class ).get( );
     private static Plugin _plugin = PluginService.getPlugin( AnnouncePlugin.PLUGIN_NAME );
 
     private AnnounceResponseHome( )
@@ -117,7 +118,7 @@ public final class AnnounceResponseHome
             {
                 if ( bLoadFiles && ( response.getFile( ) != null ) )
                 {
-                    response.setFile( FileHome.findByPrimaryKey( response.getFile( ).getIdFile( ) ) );
+                    response.setFile( FileHome.findByPrimaryKey( Integer.parseInt( response.getFile( ).getFileKey( ) ) ) );
                 }
 
                 listResponse.add( response );

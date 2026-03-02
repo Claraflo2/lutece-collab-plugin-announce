@@ -34,14 +34,12 @@
 package fr.paris.lutece.plugins.announce.web;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -57,7 +55,6 @@ import fr.paris.lutece.plugins.announce.service.AnnounceNotificationService;
 import fr.paris.lutece.plugins.announce.service.AnnounceResourceIdService;
 import fr.paris.lutece.plugins.announce.service.AnnounceService;
 import fr.paris.lutece.plugins.announce.utils.AnnounceUtils;
-import fr.paris.lutece.plugins.genericattributes.business.Entry;
 import fr.paris.lutece.plugins.genericattributes.business.Response;
 import fr.paris.lutece.portal.business.rbac.RBAC;
 import fr.paris.lutece.portal.service.admin.AccessDeniedException;
@@ -66,22 +63,22 @@ import fr.paris.lutece.portal.service.security.SecurityTokenService;
 import fr.paris.lutece.portal.service.message.AdminMessageService;
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.rbac.RBACService;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
 import fr.paris.lutece.portal.service.template.AppTemplateService;
 import fr.paris.lutece.portal.service.util.AppPathService;
-import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.portal.service.workflow.WorkflowService;
 import fr.paris.lutece.portal.web.admin.PluginAdminPageJspBean;
+import fr.paris.lutece.portal.web.cdi.mvc.Models;
 import fr.paris.lutece.portal.web.constants.Parameters;
-import fr.paris.lutece.portal.web.util.LocalizedDelegatePaginator;
-import fr.paris.lutece.util.html.AbstractPaginator;
+import fr.paris.lutece.portal.web.util.IPager;
+import fr.paris.lutece.portal.web.util.Pager;
 import fr.paris.lutece.util.html.HtmlTemplate;
-import fr.paris.lutece.util.html.Paginator;
 import fr.paris.lutece.util.url.UrlItem;
 
 /**
  * This class provides the user interface to manage announce features ( manage, create, modify, remove )
  */
+@SessionScoped
+@Named
 public class AnnounceJspBean extends PluginAdminPageJspBean
 {
     /**
@@ -130,11 +127,19 @@ public class AnnounceJspBean extends PluginAdminPageJspBean
     private static final String MARK_IS_SUBSCRIBE = "isSubscribe";
 
     /* Variables */
-    private AnnounceLifecycleService _announceLifecycleService = SpringContextService.getBean( AnnounceLifecycleService.BEAN_NAME );
-    private AnnounceNotificationService _announceNotificationService = SpringContextService.getBean( AnnounceNotificationService.BEAN_NAME );
-    private int _nDefaultItemsPerPage;
-    private String _strCurrentPageIndex;
-    private int _nItemsPerPage;
+    @Inject
+    private AnnounceLifecycleService _announceLifecycleService;
+    @Inject
+    private AnnounceNotificationService _announceNotificationService;
+    @Inject
+    private AnnounceService _announceService;
+    @Inject
+    private WorkflowService _workflowService;
+    @Inject
+    private Models _models;
+    @Inject
+    @Pager( listBookmark = "list_announces", defaultItemsPerPage = "announce.announce.itemsPerPage" )
+    private IPager<Integer, Announce> _pager;
 
     /**
      * {@inheritDoc}
@@ -163,15 +168,6 @@ public class AnnounceJspBean extends PluginAdminPageJspBean
     {
         setPageTitleProperty( PROPERTY_PAGE_TITLE_MANAGE_ANNOUNCES );
 
-        _strCurrentPageIndex = AbstractPaginator.getPageIndex( request, AbstractPaginator.PARAMETER_PAGE_INDEX, _strCurrentPageIndex );
-
-        if ( _nDefaultItemsPerPage == 0 )
-        {
-            _nDefaultItemsPerPage = AppPropertiesService.getPropertyInt( PROPERTY_DEFAULT_LIST_ANNOUNCE_PER_PAGE, 50 );
-        }
-
-        _nItemsPerPage = AbstractPaginator.getItemsPerPage( request, AbstractPaginator.PARAMETER_ITEMS_PER_PAGE, _nItemsPerPage, _nDefaultItemsPerPage );
-
         String strSort = request.getParameter( Parameters.SORTED_ATTRIBUTE_NAME );
         boolean bSortAsc = Boolean.parseBoolean( request.getParameter( Parameters.SORTED_ASC ) );
         AnnounceSort announceSort;
@@ -193,50 +189,47 @@ public class AnnounceJspBean extends PluginAdminPageJspBean
 
         List<Integer> listIdAnnounces = AnnounceHome.findAll( announceSort );
 
-        Paginator<Integer> paginatorId = new Paginator<>( listIdAnnounces, _nItemsPerPage, StringUtils.EMPTY, AbstractPaginator.PARAMETER_PAGE_INDEX,
-                _strCurrentPageIndex );
-
         User user = getUser( );
-        List<Announce> listAnnounces = AnnounceHome.findByListId( paginatorId.getPageItems( ), announceSort );
-        boolean bCanExecuteWorkflowAction = false;
+        boolean bCanExecuteWorkflowAction = _workflowService.isAvailable( ) && RBACService.isAuthorized( Announce.RESOURCE_TYPE,
+                RBAC.WILDCARD_RESOURCES_ID, AnnounceResourceIdService.PERMISSION_EXECUTE_WORKFLOW_ACTION, user );
 
-        if ( WorkflowService.getInstance( ).isAvailable( ) )
-        {
-            bCanExecuteWorkflowAction = RBACService.isAuthorized( Announce.RESOURCE_TYPE, RBAC.WILDCARD_RESOURCES_ID,
-                    AnnounceResourceIdService.PERMISSION_EXECUTE_WORKFLOW_ACTION, user );
+        final AnnounceSort finalSort = announceSort;
+        final boolean finalCanExecute = bCanExecuteWorkflowAction;
+        final User finalUser = user;
 
-            for ( Announce announce : listAnnounces )
-            {
-                announce.setCategory( CategoryHome.findByPrimaryKey( announce.getCategory( ).getId( ) ) );
+        _pager.withBaseUrl( getURLManageAnnounces( request ) )
+                .withIdList( listIdAnnounces )
+                .populateModels( request, _models, ids -> {
+                    List<Announce> announces = AnnounceHome.findByListId( ids, finalSort );
 
-                if ( bCanExecuteWorkflowAction )
-                {
-                    announce.setListWorkflowActions( WorkflowService.getInstance( ).getActions( announce.getId( ), Announce.RESOURCE_TYPE,
-                            announce.getCategory( ).getIdWorkflow( ), user ) );
-                }
-            }
-        }
+                    if ( _workflowService.isAvailable( ) )
+                    {
+                        for ( Announce announce : announces )
+                        {
+                            announce.setCategory( CategoryHome.findByPrimaryKey( announce.getCategory( ).getId( ) ) );
 
-        Map<String, Object> model = new HashMap<>( );
+                            if ( finalCanExecute )
+                            {
+                                announce.setListWorkflowActions( _workflowService.getActions( announce.getId( ), Announce.RESOURCE_TYPE,
+                                        announce.getCategory( ).getIdWorkflow( ), finalUser ) );
+                            }
+                        }
+                    }
 
-        LocalizedDelegatePaginator<Announce> paginator = new LocalizedDelegatePaginator<>( listAnnounces, _nItemsPerPage, getURLManageAnnounces( request ),
-                AbstractPaginator.PARAMETER_PAGE_INDEX, _strCurrentPageIndex, listIdAnnounces.size( ), getLocale( ) );
+                    return announces;
+                }, getLocale( ) );
 
-        model.put( MARK_NB_ITEMS_PER_PAGE, Integer.toString( _nItemsPerPage ) );
-        model.put( MARK_PAGINATOR, paginator );
-        model.put( MARK_ANNOUNCE_LIST, paginator.getPageItems( ) );
-        model.put( MARK_IS_SUBSCRIBE, AnnounceService.isSubscribeModuleAvailable( ) );
-
-        model.put( MARK_RIGHT_DELETE,
+        _models.put( MARK_IS_SUBSCRIBE, _announceService.isSubscribeModuleAvailable( ) );
+        _models.put( MARK_RIGHT_DELETE,
                 RBACService.isAuthorized( Announce.RESOURCE_TYPE, RBAC.WILDCARD_RESOURCES_ID, AnnounceResourceIdService.PERMISSION_DELETE, user ) );
-        model.put( MARK_RIGHT_PUBLISH,
+        _models.put( MARK_RIGHT_PUBLISH,
                 RBACService.isAuthorized( Announce.RESOURCE_TYPE, RBAC.WILDCARD_RESOURCES_ID, AnnounceResourceIdService.PERMISSION_PUBLISH, user ) );
-        model.put( MARK_RIGHT_SUSPEND,
+        _models.put( MARK_RIGHT_SUSPEND,
                 RBACService.isAuthorized( Announce.RESOURCE_TYPE, RBAC.WILDCARD_RESOURCES_ID, AnnounceResourceIdService.PERMISSION_SUSPEND, user ) );
-        model.put( MARK_RIGHT_WORKFLOW_ACTION, bCanExecuteWorkflowAction );
-        model.put( SecurityTokenService.MARK_TOKEN, SecurityTokenService.getInstance( ).getToken( request, TOKEN_ACTION_ANNOUNCE ) );
+        _models.put( MARK_RIGHT_WORKFLOW_ACTION, bCanExecuteWorkflowAction );
+        _models.put( SecurityTokenService.MARK_TOKEN, getSecurityTokenService( ).getToken( request, TOKEN_ACTION_ANNOUNCE ) );
 
-        HtmlTemplate templateList = AppTemplateService.getTemplate( TEMPLATE_MANAGE_ANNOUNCES, getLocale( ), model );
+        HtmlTemplate templateList = AppTemplateService.getTemplate( TEMPLATE_MANAGE_ANNOUNCES, getLocale( ), _models );
 
         return getAdminPage( templateList.getHtml( ) );
     }
@@ -258,23 +251,22 @@ public class AnnounceJspBean extends PluginAdminPageJspBean
 
         List<Response> listResponses = AnnounceResponseHome.findListResponse( announce.getId( ), false );
 
-        HashMap<String, Object> model = new HashMap<>( );
-        model.put( MARK_ENTRY_LIST_GEOLOCATION, AnnounceService.extractGeolocationEntries( listResponses ) );
-        model.put( MARK_LIST_RESPONSES, listResponses );
-        model.put( MARK_ANNOUNCE, announce );
+        _models.put( MARK_ENTRY_LIST_GEOLOCATION, _announceService.extractGeolocationEntries( listResponses ) );
+        _models.put( MARK_LIST_RESPONSES, listResponses );
+        _models.put( MARK_ANNOUNCE, announce );
 
         Category category = CategoryHome.findByPrimaryKey( announce.getCategory( ).getId( ) );
         announce.setCategory( category );
 
-        if ( ( category.getIdWorkflow( ) > 0 ) && WorkflowService.getInstance( ).isAvailable( ) )
+        if ( ( category.getIdWorkflow( ) > 0 ) && _workflowService.isAvailable( ) )
         {
-            model.put( MARK_RESOURCE_HISTORY, WorkflowService.getInstance( ).getDisplayDocumentHistory( nIdAnnounce, Announce.RESOURCE_TYPE,
+            _models.put( MARK_RESOURCE_HISTORY, _workflowService.getDisplayDocumentHistory( nIdAnnounce, Announce.RESOURCE_TYPE,
                     category.getIdWorkflow( ), request, getLocale( ), user ) );
         }
 
-        model.put( SecurityTokenService.MARK_TOKEN, SecurityTokenService.getInstance( ).getToken( request, TOKEN_ACTION_ANNOUNCE ) );
+        _models.put( SecurityTokenService.MARK_TOKEN, getSecurityTokenService( ).getToken( request, TOKEN_ACTION_ANNOUNCE ) );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_PREVIEW_ANNOUNCE, getLocale( ), model );
+        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_PREVIEW_ANNOUNCE, getLocale( ), _models );
 
         return getAdminPage( template.getHtml( ) );
     }
@@ -348,7 +340,7 @@ public class AnnounceJspBean extends PluginAdminPageJspBean
      */
     public String doPublishAnnounce( HttpServletRequest request, boolean bPublished ) throws AccessDeniedException
     {
-        if ( !SecurityTokenService.getInstance( ).validate( request, TOKEN_ACTION_ANNOUNCE ) )
+        if ( !getSecurityTokenService( ).validate( request, TOKEN_ACTION_ANNOUNCE ) )
         {
             throw new AccessDeniedException( MESSAGE_ERROR_TOKEN );
         }
@@ -388,7 +380,7 @@ public class AnnounceJspBean extends PluginAdminPageJspBean
      */
     public String doEnableAnnounce( HttpServletRequest request ) throws AccessDeniedException
     {
-        if ( !SecurityTokenService.getInstance( ).validate( request, TOKEN_ACTION_ANNOUNCE ) )
+        if ( !getSecurityTokenService( ).validate( request, TOKEN_ACTION_ANNOUNCE ) )
         {
             throw new AccessDeniedException( MESSAGE_ERROR_TOKEN );
         }
@@ -422,7 +414,7 @@ public class AnnounceJspBean extends PluginAdminPageJspBean
      */
     public String doSuspendAnnounce( HttpServletRequest request ) throws AccessDeniedException
     {
-        if ( !SecurityTokenService.getInstance( ).validate( request, TOKEN_ACTION_ANNOUNCE ) )
+        if ( !getSecurityTokenService( ).validate( request, TOKEN_ACTION_ANNOUNCE ) )
         {
             throw new AccessDeniedException( MESSAGE_ERROR_TOKEN );
         }

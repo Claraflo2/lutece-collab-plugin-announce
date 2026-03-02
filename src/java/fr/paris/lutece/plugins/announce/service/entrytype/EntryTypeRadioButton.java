@@ -35,12 +35,16 @@ package fr.paris.lutece.plugins.announce.service.entrytype;
 
 import fr.paris.lutece.plugins.genericattributes.business.Entry;
 import fr.paris.lutece.plugins.genericattributes.service.entrytype.AbstractEntryTypeRadioButton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
 
 /**
  *
  * class EntryTypeRadioButton
  *
  */
+@ApplicationScoped
+@Named( "announce.entryTypeRadioButton" )
 public class EntryTypeRadioButton extends AbstractEntryTypeRadioButton
 {
     private static final String TEMPLATE_CREATE = "admin/plugins/announce/entries/create_entry_type_radio_button.html";

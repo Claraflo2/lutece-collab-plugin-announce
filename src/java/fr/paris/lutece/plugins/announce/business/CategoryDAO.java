@@ -37,6 +37,8 @@ import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.util.ReferenceList;
 import fr.paris.lutece.util.sql.DAOUtil;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import java.sql.Statement;
 
 import java.util.ArrayList;
@@ -45,7 +47,8 @@ import java.util.List;
 /**
  * the DAO class for category
  */
-public final class CategoryDAO implements ICategoryDAO
+@ApplicationScoped
+public class CategoryDAO implements ICategoryDAO
 {
     private static final String SQL_QUERY_SELECT = "SELECT id_category, id_sector, label_category, display_price, price_mandatory, announces_validation, id_mailing_list, id_workflow, display_captcha FROM announce_category WHERE id_category = ? ";
     private static final String SQL_QUERY_SELECTALL = "SELECT a.id_category, a.id_sector, a.label_category, b.label_sector, COUNT(c.id_announce) FROM announce_category a INNER JOIN announce_sector b ON a.id_sector = b.id_sector LEFT JOIN announce_announce c ON c.id_category = a.id_category GROUP BY a.id_category, a.id_sector, a.label_category, b.label_sector ORDER BY a.id_sector, a.label_category";

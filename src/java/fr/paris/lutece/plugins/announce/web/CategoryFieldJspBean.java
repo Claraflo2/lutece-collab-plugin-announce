@@ -53,15 +53,20 @@ import fr.paris.lutece.util.url.UrlItem;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import fr.paris.lutece.portal.web.cdi.mvc.Models;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * JspBean to manage category fields
  */
+@SessionScoped
+@Named
 @Controller( controllerJsp = "ManageCategoryFields.jsp", controllerPath = "jsp/admin/plugins/announce/", right = AnnounceUserJspBean.RIGHT_MANAGE_ANNOUNCE )
 public class CategoryFieldJspBean extends MVCAdminJspBean
 {
@@ -116,6 +121,9 @@ public class CategoryFieldJspBean extends MVCAdminJspBean
     private static final String TEMPLATE_MODIFY_FIELD_WITH_CONDITIONAL_QUESTION = "admin/plugins/announce/modify_field_with_conditional_question.html";
     private static final String TEMPLATE_MODIFY_FIELD = "admin/plugins/announce/modify_field.html";
 
+    @Inject
+    private Models _models;
+
     /**
      * Gets the field creation page
      * 
@@ -130,10 +138,9 @@ public class CategoryFieldJspBean extends MVCAdminJspBean
         Field field = new Field( );
         field.setParentEntry( entry );
 
-        Map<String, Object> model = new HashMap<>( );
-        model.put( MARK_FIELD, field );
+        _models.put( MARK_FIELD, field );
 
-        return getPage( PROPERTY_CREATE_FIELD_TITLE, TEMPLATE_CREATE_FIELD, model );
+        return getPage( PROPERTY_CREATE_FIELD_TITLE, TEMPLATE_CREATE_FIELD, _models );
     }
 
     /**
@@ -190,15 +197,14 @@ public class CategoryFieldJspBean extends MVCAdminJspBean
 
         field.setParentEntry( entry );
 
-        HashMap<String, Object> model = new HashMap<>( );
-        model.put( MARK_FIELD, field );
+        _models.put( MARK_FIELD, field );
 
         String strTemplateName;
 
         if ( bWithConditionalQuestion )
         {
-            model.put( MARK_ENTRY_TYPE_LIST, AnnounceUtils.getEntryTypeReferenceList( ) );
-            model.put( MARK_ENTRY_LIST, field.getConditionalQuestions( ) );
+            _models.put( MARK_ENTRY_TYPE_LIST, AnnounceUtils.getEntryTypeReferenceList( ) );
+            _models.put( MARK_ENTRY_LIST, field.getConditionalQuestions( ) );
             strTemplateName = TEMPLATE_MODIFY_FIELD_WITH_CONDITIONAL_QUESTION;
         }
         else
@@ -206,7 +212,7 @@ public class CategoryFieldJspBean extends MVCAdminJspBean
             strTemplateName = TEMPLATE_MODIFY_FIELD;
         }
 
-        return getPage( PROPERTY_MODIFY_FIELD_TITLE, strTemplateName, model );
+        return getPage( PROPERTY_MODIFY_FIELD_TITLE, strTemplateName, _models );
     }
 
     /**

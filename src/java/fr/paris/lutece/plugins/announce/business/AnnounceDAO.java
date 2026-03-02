@@ -36,18 +36,21 @@ package fr.paris.lutece.plugins.announce.business;
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.util.sql.DAOUtil;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import java.sql.Statement;
 import java.sql.Timestamp;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
 
 /**
  * This class provides Data Access methods for Announce objects
  */
-public final class AnnounceDAO implements IAnnounceDAO
+@ApplicationScoped
+public class AnnounceDAO implements IAnnounceDAO
 {
     private static final String ORDER_BY = " ORDER BY ";
     private static final String ORDER_BY_ASCENDING = " ASC ";
@@ -570,8 +573,7 @@ public final class AnnounceDAO implements IAnnounceDAO
      * Get an announce with its category. Only the id, the label and the price boolean of the category is loaded.
      * 
      * @param daoUtil
-     *            The daoUtil to load data from. Note that the cursor of the daoUtil will NOT be moved by this method, and that the call to the daoUtil.free( )
-     *            will NOT be performed.
+     *            The daoUtil to load data from. Note that the cursor of the daoUtil will NOT be moved by this method.
      * @return The announce
      */
     private Announce getAnnounceWithCategory( DAOUtil daoUtil )

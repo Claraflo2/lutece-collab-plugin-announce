@@ -43,21 +43,23 @@
                             <#assign isImage = false>
                         </#if>
                     </#if>
-                    <#if response.field?? && response.field.title??>
-                        <#if response.field.title == "X">
+                    <#if response.field?? && response.field.code??>
+                        <#if response.field.code == "X">
                             <#assign lat = response.toStringValueResponse>
-                        <#elseif response.field.title == "Y">
+                        <#elseif response.field.code == "Y">
                             <#assign lon = response.toStringValueResponse>
-                        <#elseif response.field.title == "idAddress">
-                        <#elseif response.field.title == "address">
+                        <#elseif response.field.code == "idAddress">
+                        <#elseif response.field.code == "geometry">
+                        <#elseif response.field.code == "additional_address">
+                        <#elseif response.field.code == "address">
                             <#assign addressAnnounce = response.toStringValueResponse>
                             <@div class='d-flex align-items-baseline gap-2 mb-2'>
-                                <@h level=3 class='mb-0'>${response.entry.title!?html} :</@h>
-                                <@span>${addressAnnounce!?html}</@span>
+                                <@h level=3 class='mb-0'>${response.entry.title!} :</@h>
+                                <@span>${addressAnnounce!}</@span>
                             </@div>
                             <#list admList_entryTypeGeolocation as entry>
-                                <#if entry.mapProvider?has_content && entry.idEntry == response.entry.idEntry>
-                                    <#include entry.mapProvider.htmlRecapCode />
+                                <#if entry.mapProvider?has_content && entry.idEntry == response.entry.idEntry && lat?? && lon??>
+                                    <#include entry.mapProvider.htmlCode />
                                 </#if>
                             </#list>
                         </#if>
@@ -65,7 +67,7 @@
                         <#assign entrySave = response.entry>
                         <#if response.file?? && response.file.idFile &gt; 0>
                             <#assign isImage = true>
-                            <@h level=3>${response.entry.title!?html} :</@h>
+                            <@h level=3>${response.entry.title!} :</@h>
                             <div class="d-flex flex-wrap gap-2">
                                 <@link href='image?resource_type=announce_img&id=${response.idResponse}' title='#i18n{announce.view_announce.imagesCaption}'>
                                     <@img url='image?resource_type=announce_img&id=${response.idResponse}' alt='#i18n{announce.view_announce.imagesCaption}' params='height="80"' />
@@ -73,12 +75,12 @@
                         <#elseif response.entry.entryType.beanName?? && response.entry.entryType.beanName == "announce.entryTypeDate">
                             <#assign dateval = response.responseValue?number?number_to_date?iso_local>
                             <@div class='d-flex align-items-baseline gap-2 mb-2'>
-                                <@h level=3 class='mb-0'>${response.entry.title!?html} :</@h>
+                                <@h level=3 class='mb-0'>${response.entry.title!} :</@h>
                                 <@span>${dateval}</@span>
                             </@div>
                         <#else>
                             <@div class='d-flex align-items-baseline gap-2 mb-2'>
-                                <@h level=3 class='mb-0'>${response.entry.title!?html} :</@h>
+                                <@h level=3 class='mb-0'>${response.entry.title!} :</@h>
                                 <@span>${response.toStringValueResponse!?html}</@span>
                             </@div>
                         </#if>

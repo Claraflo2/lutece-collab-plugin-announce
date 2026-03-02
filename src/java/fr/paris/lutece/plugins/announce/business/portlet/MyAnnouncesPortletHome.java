@@ -36,7 +36,8 @@ package fr.paris.lutece.plugins.announce.business.portlet;
 import fr.paris.lutece.portal.business.portlet.IPortletInterfaceDAO;
 import fr.paris.lutece.portal.business.portlet.PortletHome;
 import fr.paris.lutece.portal.business.portlet.PortletTypeHome;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
+
+import jakarta.enterprise.inject.spi.CDI;
 
 /**
  * This class provides instances management methods for MyAnnounces portlet
@@ -44,7 +45,7 @@ import fr.paris.lutece.portal.service.spring.SpringContextService;
 public class MyAnnouncesPortletHome extends PortletHome
 {
     // Static variable pointed at the DAO instance
-    private static IMyAnnouncesPortletDAO _dao = SpringContextService.getBean( "announce.myAnnouncesPortletDAO" );
+    private static IMyAnnouncesPortletDAO _dao = CDI.current( ).select( IMyAnnouncesPortletDAO.class ).get( );
 
     // volatile ensures that all threads see a fully constructed instance (prevents instruction reordering)
     private static volatile MyAnnouncesPortletHome _singleton;

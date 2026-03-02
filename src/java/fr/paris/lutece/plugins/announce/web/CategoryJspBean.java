@@ -35,11 +35,13 @@ package fr.paris.lutece.plugins.announce.web;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -57,30 +59,32 @@ import fr.paris.lutece.plugins.genericattributes.business.EntryHome;
 import fr.paris.lutece.portal.business.rbac.RBAC;
 import fr.paris.lutece.portal.business.user.AdminUser;
 import fr.paris.lutece.portal.service.admin.AccessDeniedException;
-import fr.paris.lutece.portal.service.captcha.CaptchaSecurityService;
+import fr.paris.lutece.portal.service.captcha.ICaptchaService;
 import fr.paris.lutece.portal.service.i18n.I18nService;
 import fr.paris.lutece.portal.service.mailinglist.AdminMailingListService;
 import fr.paris.lutece.portal.service.message.AdminMessage;
 import fr.paris.lutece.portal.service.message.AdminMessageService;
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.rbac.RBACService;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
 import fr.paris.lutece.portal.service.template.AppTemplateService;
 import fr.paris.lutece.portal.service.util.AppPathService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.portal.service.workflow.WorkflowService;
 import fr.paris.lutece.portal.web.admin.PluginAdminPageJspBean;
+import fr.paris.lutece.portal.web.cdi.mvc.Models;
 import fr.paris.lutece.portal.web.constants.Messages;
 import fr.paris.lutece.portal.web.constants.Parameters;
+import fr.paris.lutece.portal.web.util.IPager;
+import fr.paris.lutece.portal.web.util.Pager;
 import fr.paris.lutece.util.ReferenceList;
-import fr.paris.lutece.util.html.AbstractPaginator;
 import fr.paris.lutece.util.html.HtmlTemplate;
-import fr.paris.lutece.util.html.Paginator;
 import fr.paris.lutece.util.url.UrlItem;
 
 /**
  * This class provides the user interface to manage category features ( manage, create, modify, remove )
  */
+@SessionScoped
+@Named
 public class CategoryJspBean extends PluginAdminPageJspBean
 {
     /**
@@ -154,7 +158,9 @@ public class CategoryJspBean extends PluginAdminPageJspBean
     private static final String MARK_LIST_ORDER_FIRST_LEVEL = "listOrderFirstLevel";
     private static final String MARK_LIST_WORKFLOWS = "listWorkflows";
     private static final String MARK_IS_CAPTCHA_ENABLED = "isCaptchaEnabled";
-    private static final CaptchaSecurityService _captchaSecurityService = new CaptchaSecurityService( );
+    @Inject
+    @Named( "captcha.captchaService" )
+    private Instance<ICaptchaService> _captchaService;
 
     /* Sort */
     private static final String SORT_SECTOR = "label_sector";
@@ -164,10 +170,17 @@ public class CategoryJspBean extends PluginAdminPageJspBean
     private static final String SESSION_SORT_ASC = "announce.sessionCategorySortAsc";
 
     /* Variables */
-    private AnnounceService _announceService = SpringContextService.getBean( AnnounceService.BEAN_NAME );
-    private AnnounceLifecycleService _announceLifecycleService = SpringContextService.getBean( AnnounceLifecycleService.BEAN_NAME );
-    private String _strCurrentPageIndex;
-    private int _nItemsPerPage;
+    @Inject
+    private AnnounceService _announceService;
+    @Inject
+    private AnnounceLifecycleService _announceLifecycleService;
+    @Inject
+    private WorkflowService _workflowService;
+    @Inject
+    private Models _models;
+    @Inject
+    @Pager( listBookmark = "list_categories", defaultItemsPerPage = "announce.category.itemsPerPage" )
+    private IPager<Category, Void> _pager;
     private Category _category;
 
     /**
@@ -197,10 +210,6 @@ public class CategoryJspBean extends PluginAdminPageJspBean
     {
         setPageTitleProperty( PROPERTY_PAGE_TITLE_MANAGE_CATEGORIES );
 
-        _strCurrentPageIndex = AbstractPaginator.getPageIndex( request, AbstractPaginator.PARAMETER_PAGE_INDEX, _strCurrentPageIndex );
-        int defaultItemsPerPage = AppPropertiesService.getPropertyInt( PROPERTY_DEFAULT_LIST_CATEGORY_PER_PAGE, 50 );
-        _nItemsPerPage = AbstractPaginator.getItemsPerPage( request, AbstractPaginator.PARAMETER_ITEMS_PER_PAGE, _nItemsPerPage, defaultItemsPerPage );
-
         List<Category> listCategories = new ArrayList<>( CategoryHome.findAll( ) );
 
         // Sort handling
@@ -229,15 +238,11 @@ public class CategoryJspBean extends PluginAdminPageJspBean
             }
         }
 
-        Paginator<Category> paginator = new Paginator<>( listCategories, _nItemsPerPage, getUrlPage( ), PARAMETER_PAGE_INDEX, _strCurrentPageIndex );
+        _pager.withBaseUrl( getUrlPage( ) )
+                .withListItem( listCategories )
+                .populateModels( request, _models, getLocale( ) );
 
-        Map<String, Object> model = new HashMap<>( );
-
-        model.put( MARK_NB_ITEMS_PER_PAGE, "" + _nItemsPerPage );
-        model.put( MARK_PAGINATOR, paginator );
-        model.put( MARK_LIST_CATEGORIES, paginator.getPageItems( ) );
-
-        HtmlTemplate templateList = AppTemplateService.getTemplate( TEMPLATE_MANAGE_CATEGORIES, getLocale( ), model );
+        HtmlTemplate templateList = AppTemplateService.getTemplate( TEMPLATE_MANAGE_CATEGORIES, getLocale( ), _models );
 
         return getAdminPage( templateList.getHtml( ) );
     }
@@ -277,19 +282,16 @@ public class CategoryJspBean extends PluginAdminPageJspBean
         listAnnouncesValidation.addItem( 1, I18nService.getLocalizedString( PROPERTY_CREATE_CATEGORY_YES, request.getLocale( ) ) );
         listAnnouncesValidation.addItem( 2, I18nService.getLocalizedString( PROPERTY_CREATE_CATEGORY_NO, request.getLocale( ) ) );
 
-        HashMap<String, Object> model = new HashMap<>( );
-        model.put( MARK_LIST_FIELDS, listSectors );
-
-        model.put( MARK_LIST_CAT_DUP, listCatDup );
-
-        model.put( MARK_MAILING_LIST_LIST, refMailingList );
-        model.put( MARK_LIST_ANNOUNCES_VALIDATION, listAnnouncesValidation );
-        model.put( MARK_LIST_WORKFLOWS, WorkflowService.getInstance( ).getWorkflowsEnabled( user, getLocale( ) ) );
-        model.put( MARK_IS_CAPTCHA_ENABLED, _captchaSecurityService.isAvailable( ) );
-        model.put( MARK_CATEGORY, ( _category != null ) ? _category : new Category( ) );
+        _models.put( MARK_LIST_FIELDS, listSectors );
+        _models.put( MARK_LIST_CAT_DUP, listCatDup );
+        _models.put( MARK_MAILING_LIST_LIST, refMailingList );
+        _models.put( MARK_LIST_ANNOUNCES_VALIDATION, listAnnouncesValidation );
+        _models.put( MARK_LIST_WORKFLOWS, _workflowService.getWorkflowsEnabled( user, getLocale( ) ) );
+        _models.put( MARK_IS_CAPTCHA_ENABLED, _captchaService.isResolvable( ) );
+        _models.put( MARK_CATEGORY, ( _category != null ) ? _category : new Category( ) );
         _category = null;
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_CREATE_CATEGORY, getLocale( ), model );
+        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_CREATE_CATEGORY, getLocale( ), _models );
 
         return getAdminPage( template.getHtml( ) );
     }
@@ -406,25 +408,23 @@ public class CategoryJspBean extends PluginAdminPageJspBean
         }
 
         User user = getUser( );
-        Map<String, Object> model = new HashMap<>( );
-        model.put( MARK_GROUP_ENTRY_LIST, getRefListGroups( category.getId( ) ) );
-        model.put( MARK_ENTRY_TYPE_LIST, AnnounceUtils.getEntryTypeReferenceList( ) );
-        model.put( MARK_ENTRY_LIST, listEntry );
-        model.put( MARK_LIST_ORDER_FIRST_LEVEL, listOrderFirstLevel );
-        model.put( MARK_LIST_WORKFLOWS, WorkflowService.getInstance( ).getWorkflowsEnabled( user, getLocale( ) ) );
-        model.put( MARK_IS_CAPTCHA_ENABLED, _captchaSecurityService.isAvailable( ) );
+        _models.put( MARK_GROUP_ENTRY_LIST, getRefListGroups( category.getId( ) ) );
+        _models.put( MARK_ENTRY_TYPE_LIST, AnnounceUtils.getEntryTypeReferenceList( ) );
+        _models.put( MARK_ENTRY_LIST, listEntry );
+        _models.put( MARK_LIST_ORDER_FIRST_LEVEL, listOrderFirstLevel );
+        _models.put( MARK_LIST_WORKFLOWS, _workflowService.getWorkflowsEnabled( user, getLocale( ) ) );
+        _models.put( MARK_IS_CAPTCHA_ENABLED, _captchaService.isResolvable( ) );
 
         UrlItem url = new UrlItem( JSP_URL_MODIFY );
         url.addParameter( PARAMETER_CATEGORY_ID, category.getId( ) );
 
-        model.put( MARK_CATEGORY, category );
-        model.put( MARK_NB_ITEMS_PER_PAGE, Integer.toString( _nItemsPerPage ) );
-        model.put( MARK_LIST_FIELDS, listSectors );
-        model.put( MARK_MAILING_LIST_LIST, refMailingList );
-        model.put( MARK_LIST_ANNOUNCES_VALIDATION, listAnnouncesValidation );
-        model.put( MARK_PLUGIN, getPlugin( ) );
+        _models.put( MARK_CATEGORY, category );
+        _models.put( MARK_LIST_FIELDS, listSectors );
+        _models.put( MARK_MAILING_LIST_LIST, refMailingList );
+        _models.put( MARK_LIST_ANNOUNCES_VALIDATION, listAnnouncesValidation );
+        _models.put( MARK_PLUGIN, getPlugin( ) );
 
-        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_MODIFY_CATEGORY, getLocale( ), model );
+        HtmlTemplate template = AppTemplateService.getTemplate( TEMPLATE_MODIFY_CATEGORY, getLocale( ), _models );
 
         return getAdminPage( template.getHtml( ) );
     }

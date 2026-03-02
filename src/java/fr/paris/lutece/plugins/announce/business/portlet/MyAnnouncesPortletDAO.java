@@ -35,10 +35,13 @@ package fr.paris.lutece.plugins.announce.business.portlet;
 
 import fr.paris.lutece.portal.business.portlet.Portlet;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 /**
  * this class provides Data Access methods for MyAnnouncePortlet objects
  */
-public final class MyAnnouncesPortletDAO implements IMyAnnouncesPortletDAO
+@ApplicationScoped
+public class MyAnnouncesPortletDAO implements IMyAnnouncesPortletDAO
 {
     /**
      * Insert a new record in the table.

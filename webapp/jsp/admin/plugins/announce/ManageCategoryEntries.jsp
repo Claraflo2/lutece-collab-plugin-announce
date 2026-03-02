@@ -1,9 +1,9 @@
-<jsp:useBean id="categoryEntry" scope="session" class="fr.paris.lutece.plugins.announce.web.CategoryEntryJspBean" />
-<% String strContent = categoryEntry.processController ( request , response ); %>
-
 <%@ page errorPage="../../ErrorPage.jsp" %>
+
+${ pageContext.setAttribute( 'strContent', categoryEntryJspBean.processController( pageContext.request , pageContext.response ) ) }
+
 <jsp:include page="../../AdminHeader.jsp" />
 
-<%= strContent %>
+${ pageContext.getAttribute( 'strContent' ) }
 
 <%@ include file="../../AdminFooter.jsp" %>

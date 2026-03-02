@@ -51,8 +51,8 @@ import fr.paris.lutece.portal.service.daemon.Daemon;
 import fr.paris.lutece.portal.service.datastore.DatastoreService;
 import fr.paris.lutece.portal.service.i18n.I18nService;
 import fr.paris.lutece.portal.service.mail.MailService;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
 import fr.paris.lutece.portal.service.template.AppTemplateService;
+import jakarta.enterprise.inject.spi.CDI;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.util.html.HtmlTemplate;
@@ -88,7 +88,7 @@ public class AnnounceExpirationDaemon extends Daemon
     {
         if ( _announceLifecycleService == null )
         {
-            _announceLifecycleService = SpringContextService.getBean( AnnounceLifecycleService.BEAN_NAME );
+            _announceLifecycleService = CDI.current( ).select( AnnounceLifecycleService.class ).get( );
         }
 
         Calendar calendar = new GregorianCalendar( );

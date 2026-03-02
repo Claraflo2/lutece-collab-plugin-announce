@@ -1,8 +1,9 @@
 <%@ page errorPage="../../ErrorPage.jsp" %>
 <jsp:include page="../../AdminHeader.jsp" />
 
-<jsp:useBean id="announceCategory" scope="session" class="fr.paris.lutece.plugins.announce.web.CategoryJspBean" />
-<% announceCategory.init( request , announceCategory.RIGHT_MANAGE_ANNOUNCE ); %>
-<%= announceCategory.getCreateCategory( request )%>
+<%@page import="fr.paris.lutece.plugins.announce.web.CategoryJspBean"%>
 
-<%@include file="../../AdminFooter.jsp" %>
+${ categoryJspBean.init( pageContext.request, CategoryJspBean.RIGHT_MANAGE_ANNOUNCE ) }
+${ categoryJspBean.getCreateCategory( pageContext.request ) }
+
+<%@ include file="../../AdminFooter.jsp" %>

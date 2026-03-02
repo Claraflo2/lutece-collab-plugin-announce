@@ -1,8 +1,6 @@
 <%@ page errorPage="../../ErrorPage.jsp" %>
 
-<jsp:useBean id="announce" scope="session" class="fr.paris.lutece.plugins.announce.web.AnnounceJspBean" />
+<%@page import="fr.paris.lutece.plugins.announce.web.AnnounceJspBean"%>
 
-<%
-	announce.init( request, announce.RIGHT_MANAGE_ANNOUNCE );
-    response.sendRedirect( announce.doPublishAnnounce( request, false ) );
-%>
+${ announceJspBean.init( pageContext.request, AnnounceJspBean.RIGHT_MANAGE_ANNOUNCE ) }
+${ pageContext.response.sendRedirect( announceJspBean.doPublishAnnounce( pageContext.request, false ) ) }

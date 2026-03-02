@@ -1,9 +1,9 @@
 <%@ page errorPage="../../ErrorPage.jsp" %>
 <jsp:include page="../../AdminHeader.jsp" />
 
-<jsp:useBean id="announceSector" scope="session" class="fr.paris.lutece.plugins.announce.web.SectorJspBean" />
+<%@page import="fr.paris.lutece.plugins.announce.web.SectorJspBean"%>
 
-<% announceSector.init( request , announceSector.RIGHT_MANAGE_ANNOUNCE ); %>
-<%= announceSector.getModifySector( request )%>
+${ sectorJspBean.init( pageContext.request, SectorJspBean.RIGHT_MANAGE_ANNOUNCE ) }
+${ sectorJspBean.getModifySector( pageContext.request ) }
 
-<%@include file="../../AdminFooter.jsp" %>
+<%@ include file="../../AdminFooter.jsp" %>

@@ -35,6 +35,7 @@ package fr.paris.lutece.plugins.announce.service.announcesearch;
 
 import fr.paris.lutece.portal.service.daemon.Daemon;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
+import jakarta.enterprise.inject.spi.CDI;
 
 /**
  * AnnounceSearchIndexerDaemon
@@ -50,6 +51,6 @@ public class AnnounceSearchIndexerDaemon extends Daemon
     public void run( )
     {
         boolean bTotalIndexing = Boolean.parseBoolean( AppPropertiesService.getProperty( PROPERTY_INDEXER_PARAM_TOTAL, "true" ) );
-        setLastRunLogs( AnnounceSearchService.getInstance( ).processIndexing( bTotalIndexing ) );
+        setLastRunLogs( CDI.current( ).select( AnnounceSearchService.class ).get( ).processIndexing( bTotalIndexing ) );
     }
 }

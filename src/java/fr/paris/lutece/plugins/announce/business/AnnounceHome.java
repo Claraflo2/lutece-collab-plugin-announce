@@ -39,7 +39,8 @@ import fr.paris.lutece.plugins.genericattributes.business.Response;
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.plugin.PluginService;
 import fr.paris.lutece.portal.service.security.LuteceUser;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
+
+import jakarta.enterprise.inject.spi.CDI;
 
 import java.sql.Timestamp;
 
@@ -51,7 +52,8 @@ import java.util.List;
 public final class AnnounceHome
 {
     // Static variable pointed at the DAO instance
-    private static IAnnounceDAO _dao = SpringContextService.getBean( "announce.announceDAO" );
+    private static IAnnounceDAO _dao = CDI.current( ).select( IAnnounceDAO.class ).get( );
+    private static AnnounceCacheService _cacheService = CDI.current( ).select( AnnounceCacheService.class ).get( );
     private static Plugin _plugin = PluginService.getPlugin( AnnouncePlugin.PLUGIN_NAME );
 
     /**
@@ -112,7 +114,7 @@ public final class AnnounceHome
      */
     public static Announce findByPrimaryKey( int nKey )
     {
-        Announce announce = (Announce) AnnounceCacheService.getService( ).getFromCache( AnnounceCacheService.getAnnounceCacheKey( nKey ) );
+        Announce announce = (Announce) _cacheService.get( AnnounceCacheService.getAnnounceCacheKey( nKey ) );
 
         if ( announce == null )
         {
@@ -120,7 +122,7 @@ public final class AnnounceHome
 
             if ( announce != null )
             {
-                AnnounceCacheService.getService( ).putInCache( AnnounceCacheService.getAnnounceCacheKey( announce.getId( ) ), announce );
+                _cacheService.put( AnnounceCacheService.getAnnounceCacheKey( announce.getId( ) ), announce );
             }
         }
 
@@ -160,12 +162,12 @@ public final class AnnounceHome
         String strCacheKey = AnnounceCacheService.getListIdPublishedAnnouncesCacheKey( announceSort.getSortColumn( ), announceSort.getSortAsc( ) );
 
         @SuppressWarnings( "unchecked" )
-        List<Integer> listIds = (List<Integer>) AnnounceCacheService.getService( ).getFromCache( strCacheKey );
+        List<Integer> listIds = (List<Integer>) _cacheService.get( strCacheKey );
 
         if ( listIds == null )
         {
             listIds = _dao.selectAllPublishedId( announceSort, _plugin );
-            AnnounceCacheService.getService( ).putInCache( strCacheKey, listIds );
+            _cacheService.put( strCacheKey, listIds );
         }
 
         return listIds;

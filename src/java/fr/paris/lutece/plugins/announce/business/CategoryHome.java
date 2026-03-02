@@ -42,9 +42,10 @@ import fr.paris.lutece.plugins.genericattributes.business.EntryFilter;
 import fr.paris.lutece.plugins.genericattributes.business.EntryHome;
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.plugin.PluginService;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
 import fr.paris.lutece.portal.service.util.AppException;
 import fr.paris.lutece.util.ReferenceList;
+
+import jakarta.enterprise.inject.spi.CDI;
 
 /**
  * the Home class for category
@@ -52,7 +53,8 @@ import fr.paris.lutece.util.ReferenceList;
 public final class CategoryHome
 {
     // Static variable pointed at the DAO instance
-    private static ICategoryDAO _dao = SpringContextService.getBean( "announce.categoryDAO" );
+    private static ICategoryDAO _dao = CDI.current( ).select( ICategoryDAO.class ).get( );
+    private static AnnounceCacheService _cacheService = CDI.current( ).select( AnnounceCacheService.class ).get( );
     private static Plugin _plugin = PluginService.getPlugin( AnnouncePlugin.PLUGIN_NAME );
 
     /** Creates a new instance of CategoryHome */
@@ -81,7 +83,7 @@ public final class CategoryHome
     public static Category update( Category category )
     {
         _dao.store( category, _plugin );
-        AnnounceCacheService.getService( ).putInCache( AnnounceCacheService.getCategoryCacheKey( category.getId( ) ), category );
+        _cacheService.put( AnnounceCacheService.getCategoryCacheKey( category.getId( ) ), category );
 
         return category;
     }
@@ -118,7 +120,7 @@ public final class CategoryHome
 
         AnnounceSearchFilterHome.deleteByIdCategory( category.getId( ) );
         _dao.delete( category, _plugin );
-        AnnounceCacheService.getService( ).removeKey( AnnounceCacheService.getCategoryCacheKey( category.getId( ) ) );
+        _cacheService.remove( AnnounceCacheService.getCategoryCacheKey( category.getId( ) ) );
     }
 
     // /////////////////////////////////////////////////////////////////////////
@@ -134,7 +136,7 @@ public final class CategoryHome
      */
     public static Category findByPrimaryKey( int nKey )
     {
-        Category category = (Category) AnnounceCacheService.getService( ).getFromCache( AnnounceCacheService.getCategoryCacheKey( nKey ) );
+        Category category = (Category) _cacheService.get( AnnounceCacheService.getCategoryCacheKey( nKey ) );
 
         if ( category == null )
         {
@@ -142,7 +144,7 @@ public final class CategoryHome
 
             if ( category != null )
             {
-                AnnounceCacheService.getService( ).putInCache( AnnounceCacheService.getCategoryCacheKey( category.getId( ) ), category );
+                _cacheService.put( AnnounceCacheService.getCategoryCacheKey( category.getId( ) ), category );
             }
         }
 

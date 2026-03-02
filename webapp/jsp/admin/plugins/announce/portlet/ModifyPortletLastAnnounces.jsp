@@ -1,12 +1,7 @@
 <%@ page errorPage="../../../ErrorPage.jsp" %>
-
 <jsp:include page="../../../PortletAdminHeader.jsp" />
 
-<jsp:useBean id="lastAnnouncesPortlet" scope="session" class="fr.paris.lutece.plugins.announce.web.portlet.LastAnnouncesPortletJspBean" />
+<%@page import="fr.paris.lutece.plugins.announce.web.portlet.LastAnnouncesPortletJspBean"%>
 
-<% lastAnnouncesPortlet.init( request, lastAnnouncesPortlet.RIGHT_MANAGE_ADMIN_SITE ); %>
-<%= lastAnnouncesPortlet.getModify ( request ) %>
-
-<%@ include file="../../../AdminFooter.jsp" %>
-
-
+${ lastAnnouncesPortletJspBean.init( pageContext.request, LastAnnouncesPortletJspBean.RIGHT_MANAGE_ADMIN_SITE ) }
+${ lastAnnouncesPortletJspBean.getModify( pageContext.request ) }

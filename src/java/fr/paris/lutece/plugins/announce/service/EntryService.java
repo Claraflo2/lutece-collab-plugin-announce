@@ -37,8 +37,8 @@ import fr.paris.lutece.plugins.announce.business.Category;
 import fr.paris.lutece.plugins.genericattributes.business.Entry;
 import fr.paris.lutece.plugins.genericattributes.business.EntryFilter;
 import fr.paris.lutece.plugins.genericattributes.business.EntryHome;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
 import fr.paris.lutece.portal.service.util.RemovalListenerService;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import java.io.Serializable;
 
@@ -48,6 +48,7 @@ import java.util.List;
 /**
  * Service to manage entries
  */
+@ApplicationScoped
 public class EntryService extends RemovalListenerService implements Serializable
 {
     /**
@@ -55,16 +56,6 @@ public class EntryService extends RemovalListenerService implements Serializable
      */
     public static final String BEAN_NAME = "announce.entryService";
     private static final long serialVersionUID = -5378918040356139703L;
-
-    /**
-     * Get an instance of the service
-     * 
-     * @return An instance of the service
-     */
-    public static EntryService getService( )
-    {
-        return SpringContextService.getBean( BEAN_NAME );
-    }
 
     /**
      * Change the attribute's order to a greater one (move down in the list)

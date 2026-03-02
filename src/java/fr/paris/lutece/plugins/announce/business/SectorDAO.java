@@ -43,12 +43,15 @@ import fr.paris.lutece.util.ReferenceItem;
 import fr.paris.lutece.util.ReferenceList;
 import fr.paris.lutece.util.sql.DAOUtil;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import java.sql.Statement;
 
 /**
  * DAO implementation to manage sectors
  */
-public final class SectorDAO implements ISectorDAO
+@ApplicationScoped
+public class SectorDAO implements ISectorDAO
 {
     private static final String SQL_QUERY_SELECT = "SELECT id_sector, label_sector, description_sector, announces_validation, sector_order, tags FROM announce_sector WHERE id_sector = ? ";
     private static final String SQL_QUERY_SELECTALL = "SELECT a.id_sector, a.label_sector, a.description_sector, a.announces_validation, a.sector_order, a.tags, COUNT(c.id_category) FROM announce_sector a LEFT JOIN announce_category c ON c.id_sector = a.id_sector GROUP BY a.id_sector, a.label_sector, a.description_sector, a.announces_validation, a.sector_order, a.tags ORDER BY a.sector_order";

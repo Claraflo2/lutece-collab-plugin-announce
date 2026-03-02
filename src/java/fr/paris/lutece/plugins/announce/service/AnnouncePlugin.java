@@ -37,6 +37,7 @@ import fr.paris.lutece.portal.service.image.ImageResourceManager;
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.plugin.PluginDefaultImplementation;
 import fr.paris.lutece.portal.service.plugin.PluginService;
+import jakarta.enterprise.inject.spi.CDI;
 
 /**
  * class AnnouncePlugin
@@ -54,7 +55,7 @@ public class AnnouncePlugin extends PluginDefaultImplementation
     @Override
     public void init( )
     {
-        ImageResourceManager.registerProvider( new AnnounceResponseImageResourceProvider( ) );
+        ImageResourceManager.registerProvider( CDI.current( ).select( AnnounceResponseImageResourceProvider.class ).get( ) );
     }
 
     /**

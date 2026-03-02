@@ -60,16 +60,21 @@ import fr.paris.lutece.util.url.UrlItem;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import fr.paris.lutece.portal.web.cdi.mvc.Models;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * JspBean to manage category entries
  */
+@SessionScoped
+@Named
 @Controller( controllerJsp = "ManageCategoryEntries.jsp", controllerPath = "jsp/admin/plugins/announce/", right = AnnounceUserJspBean.RIGHT_MANAGE_ANNOUNCE )
 public class CategoryEntryJspBean extends MVCAdminJspBean
 {
@@ -125,7 +130,10 @@ public class CategoryEntryJspBean extends MVCAdminJspBean
     private static final String MARK_ENTRY_TYPE_SERVICE = "entryTypeService";
 
     // Local variables
-    private EntryService _entryService = EntryService.getService( );
+    @Inject
+    private EntryService _entryService;
+    @Inject
+    private Models _models;
 
     /**
      * Get the HTML code to create an entry
@@ -175,12 +183,11 @@ public class CategoryEntryJspBean extends MVCAdminJspBean
         Category category = CategoryHome.findByPrimaryKey( nIdCategory );
 
         // Default Values
-        Map<String, Object> model = new HashMap<>( );
-        model.put( MARK_ENTRY, entry );
-        model.put( MARK_CATEGORY, category );
-        model.put( MARK_WEBAPP_URL, AppPathService.getBaseUrl( request ) );
-        model.put( MARK_LOCALE, AdminUserService.getLocale( request ).getLanguage( ) );
-        model.put( MARK_ENTRY_TYPE_SERVICE, EntryTypeServiceManager.getEntryTypeService( entry ) );
+        _models.put( MARK_ENTRY, entry );
+        _models.put( MARK_CATEGORY, category );
+        _models.put( MARK_WEBAPP_URL, AppPathService.getBaseUrl( request ) );
+        _models.put( MARK_LOCALE, AdminUserService.getLocale( request ).getLanguage( ) );
+        _models.put( MARK_ENTRY_TYPE_SERVICE, EntryTypeServiceManager.getEntryTypeService( entry ) );
 
         String strTemplate = EntryTypeServiceManager.getEntryTypeService( entry ).getTemplateCreate( entry, false );
 
@@ -189,7 +196,7 @@ public class CategoryEntryJspBean extends MVCAdminJspBean
             return doCreateEntry( request );
         }
 
-        return getPage( PROPERTY_CREATE_ENTRY_TITLE, strTemplate, model );
+        return getPage( PROPERTY_CREATE_ENTRY_TITLE, strTemplate, _models );
     }
 
     /**
@@ -303,27 +310,26 @@ public class CategoryEntryJspBean extends MVCAdminJspBean
 
             IEntryTypeService entryTypeService = EntryTypeServiceManager.getEntryTypeService( entry );
 
-            Map<String, Object> model = new HashMap<>( );
-            model.put( MARK_ENTRY, entry );
-            model.put( MARK_CATEGORY, CategoryHome.findByPrimaryKey( entry.getIdResource( ) ) );
+            _models.put( MARK_ENTRY, entry );
+            _models.put( MARK_CATEGORY, CategoryHome.findByPrimaryKey( entry.getIdResource( ) ) );
 
             UrlItem urlItem = new UrlItem( AppPathService.getBaseUrl( request ) + getViewUrl( VIEW_GET_MODIFY_ENTRY ) );
             urlItem.addParameter( PARAMETER_ID_ENTRY, strIdEntry );
 
-            model.put( MARK_LIST, entry.getFields( ) );
+            _models.put( MARK_LIST, entry.getFields( ) );
 
             ReferenceList refListRegularExpression = entryTypeService.getReferenceListRegularExpression( entry, plugin );
 
             if ( refListRegularExpression != null )
             {
-                model.put( MARK_REGULAR_EXPRESSION_LIST_REF_LIST, refListRegularExpression );
+                _models.put( MARK_REGULAR_EXPRESSION_LIST_REF_LIST, refListRegularExpression );
             }
 
-            model.put( MARK_WEBAPP_URL, AppPathService.getBaseUrl( request ) );
-            model.put( MARK_LOCALE, AdminUserService.getLocale( request ).getLanguage( ) );
-            model.put( MARK_ENTRY_TYPE_SERVICE, EntryTypeServiceManager.getEntryTypeService( entry ) );
+            _models.put( MARK_WEBAPP_URL, AppPathService.getBaseUrl( request ) );
+            _models.put( MARK_LOCALE, AdminUserService.getLocale( request ).getLanguage( ) );
+            _models.put( MARK_ENTRY_TYPE_SERVICE, EntryTypeServiceManager.getEntryTypeService( entry ) );
 
-            return getPage( PROPERTY_MODIFY_QUESTION_TITLE, entryTypeService.getTemplateModify( entry, false ), model );
+            return getPage( PROPERTY_MODIFY_QUESTION_TITLE, entryTypeService.getTemplateModify( entry, false ), _models );
         }
 
         return redirect( request, CategoryJspBean.getUrlManageCategories( request ) );
